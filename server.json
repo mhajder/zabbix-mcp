@@ -1,0 +1,335 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.mhajder/zabbix-mcp",
+  "description": "MCP server for Zabbix monitoring and automation",
+  "title": "Zabbix MCP",
+  "websiteUrl": "https://github.com/mhajder/zabbix-mcp",
+  "repository": {
+    "url": "https://github.com/mhajder/zabbix-mcp",
+    "source": "github"
+  },
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "zabbix-mcp",
+      "version": "0.1.0",
+      "runtimeHint": "uvx",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "ZABBIX_URL",
+          "description": "Zabbix API URL (e.g., https://zabbix.example.com/api_jsonrpc.php)",
+          "isRequired": true,
+          "isSecret": false
+        },
+        {
+          "name": "ZABBIX_TOKEN",
+          "description": "Zabbix API token (preferred for Zabbix 5.4+)",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "ZABBIX_USER",
+          "description": "Zabbix username (alternative to token)",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "ZABBIX_PASSWORD",
+          "description": "Zabbix password (alternative to token)",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "ZABBIX_VERIFY_SSL",
+          "description": "Verify SSL certificates (true/false)",
+          "default": "true",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "ZABBIX_TIMEOUT",
+          "description": "Request timeout in seconds",
+          "default": "30",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "ZABBIX_SKIP_VERSION_CHECK",
+          "description": "Skip Zabbix API version compatibility check",
+          "default": "false",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "READ_ONLY_MODE",
+          "description": "Enable read-only mode to restrict write operations",
+          "default": "false",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "DISABLED_TAGS",
+          "description": "Comma-separated list of tags to disable tools for",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "LOG_LEVEL",
+          "description": "Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)",
+          "default": "INFO",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "RATE_LIMIT_ENABLED",
+          "description": "Enable rate limiting",
+          "default": "false",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "RATE_LIMIT_MAX_REQUESTS",
+          "description": "Maximum requests per rate limit window",
+          "default": "60",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "RATE_LIMIT_WINDOW_MINUTES",
+          "description": "Rate limit window in minutes",
+          "default": "1",
+          "isRequired": false,
+          "isSecret": false
+        }
+      ]
+    },
+    {
+      "registryType": "pypi",
+      "identifier": "zabbix-mcp",
+      "version": "0.1.0",
+      "runtimeHint": "uvx",
+      "transport": {
+        "type": "streamable-http",
+        "url": "http://localhost:{MCP_HTTP_PORT}/mcp"
+      },
+      "environmentVariables": [
+        {
+          "name": "ZABBIX_URL",
+          "description": "Zabbix API URL (e.g., https://zabbix.example.com/api_jsonrpc.php)",
+          "isRequired": true,
+          "isSecret": false
+        },
+        {
+          "name": "ZABBIX_TOKEN",
+          "description": "Zabbix API token (preferred for Zabbix 5.4+)",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "ZABBIX_USER",
+          "description": "Zabbix username (alternative to token)",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "ZABBIX_PASSWORD",
+          "description": "Zabbix password (alternative to token)",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "ZABBIX_VERIFY_SSL",
+          "description": "Verify SSL certificates (true/false)",
+          "default": "true",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "ZABBIX_TIMEOUT",
+          "description": "Request timeout in seconds",
+          "default": "30",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "ZABBIX_SKIP_VERSION_CHECK",
+          "description": "Skip Zabbix API version compatibility check",
+          "default": "false",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "READ_ONLY_MODE",
+          "description": "Enable read-only mode to restrict write operations",
+          "default": "false",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "DISABLED_TAGS",
+          "description": "Comma-separated list of tags to disable tools for",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "LOG_LEVEL",
+          "description": "Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)",
+          "default": "INFO",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "RATE_LIMIT_ENABLED",
+          "description": "Enable rate limiting",
+          "default": "false",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "RATE_LIMIT_MAX_REQUESTS",
+          "description": "Maximum requests per rate limit window",
+          "default": "60",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "RATE_LIMIT_WINDOW_MINUTES",
+          "description": "Rate limit window in minutes",
+          "default": "1",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "MCP_HTTP_PORT",
+          "description": "Port for HTTP server (default: 8000)",
+          "default": "8000",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "MCP_TRANSPORT",
+          "description": "MCP transport type (http for HTTP, stdio for stdio)",
+          "value": "http",
+          "isRequired": false,
+          "isSecret": false
+        }
+      ]
+    },
+    {
+      "registryType": "oci",
+      "identifier": "ghcr.io/mhajder/zabbix-mcp:0.1.0",
+      "transport": {
+        "type": "streamable-http",
+        "url": "http://localhost:{MCP_HTTP_PORT}/mcp"
+      },
+      "runtimeArguments": [
+        {
+          "type": "named",
+          "name": "-p",
+          "value": "{MCP_HTTP_PORT}:8000",
+          "description": "Port mapping for HTTP transport",
+          "isRequired": true
+        }
+      ],
+      "environmentVariables": [
+        {
+          "name": "ZABBIX_URL",
+          "description": "Zabbix API URL (e.g., https://zabbix.example.com/api_jsonrpc.php)",
+          "isRequired": true,
+          "isSecret": false
+        },
+        {
+          "name": "ZABBIX_TOKEN",
+          "description": "Zabbix API token (preferred for Zabbix 5.4+)",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "ZABBIX_USER",
+          "description": "Zabbix username (alternative to token)",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "ZABBIX_PASSWORD",
+          "description": "Zabbix password (alternative to token)",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "ZABBIX_VERIFY_SSL",
+          "description": "Verify SSL certificates (true/false)",
+          "default": "true",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "ZABBIX_TIMEOUT",
+          "description": "Request timeout in seconds",
+          "default": "30",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "ZABBIX_SKIP_VERSION_CHECK",
+          "description": "Skip Zabbix API version compatibility check",
+          "default": "false",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "READ_ONLY_MODE",
+          "description": "Enable read-only mode to restrict write operations",
+          "default": "false",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "DISABLED_TAGS",
+          "description": "Comma-separated list of tags to disable tools for",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "LOG_LEVEL",
+          "description": "Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)",
+          "default": "INFO",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "RATE_LIMIT_ENABLED",
+          "description": "Enable rate limiting",
+          "default": "false",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "RATE_LIMIT_MAX_REQUESTS",
+          "description": "Maximum requests per rate limit window",
+          "default": "60",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "RATE_LIMIT_WINDOW_MINUTES",
+          "description": "Rate limit window in minutes",
+          "default": "1",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "MCP_HTTP_PORT",
+          "description": "Port for HTTP server (default: 8000)",
+          "default": "8000",
+          "isRequired": false,
+          "isSecret": false
+        }
+      ]
+    }
+  ]
+}
