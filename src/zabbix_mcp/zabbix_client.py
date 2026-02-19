@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 
@@ -11,15 +12,12 @@ logger = logging.getLogger(__name__)
 
 
 class ZabbixClient:
-    """Async client wrapper for Zabbix API using zabbix_utils AsyncZabbixAPI.
-
-    This class provides a singleton pattern for managing the Zabbix API connection
-    and exposes the underlying AsyncZabbixAPI for making API calls.
-    """
+    """Async client wrapper for Zabbix API using zabbix_utils AsyncZabbixAPI."""
 
     _instance: "ZabbixClient | None" = None
     _initialized: bool = False
     _api: AsyncZabbixAPI | None = None
+    _task_apis: dict
 
     def __new__(cls, config: ZabbixConfig | None = None):
         """Create a new instance of ZabbixClient (singleton)."""
@@ -34,85 +32,75 @@ class ZabbixClient:
         if config is None:
             raise ValueError("Config must be provided for first initialization")
         self.config = config
+        self._task_apis = {}
         self._initialized = True
 
     async def __aenter__(self) -> AsyncZabbixAPI:
-        """Enter the async context manager and return authenticated API.
-
-        Kept for backward compatibility: it returns the persistent API instance
-        but does not logout on exit (to allow reuse across tool calls).
-        """
-        return await self.get_api()
+        """Create a fresh, authenticated API instance for the current task."""
+        api = await self._create_fresh_api()
+        task = asyncio.current_task()
+        key = id(task) if task is not None else 0
+        self._task_apis[key] = api
+        return api
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        """Do not logout on context exit to allow session reuse."""
+        """Log out and discard the API instance belonging to the current task."""
+        task = asyncio.current_task()
+        key = id(task) if task is not None else 0
+        api = self._task_apis.pop(key, None)
+        if api is not None:
+            try:
+                await api.logout()
+            except Exception:
+                logger.debug("Ignoring exception while closing Zabbix API session")
         return False
 
-    async def get_api(self) -> AsyncZabbixAPI:
-        """Get authenticated API instance, creating and logging in if necessary.
+    async def _create_fresh_api(self) -> AsyncZabbixAPI:
+        """Create and return a new, authenticated AsyncZabbixAPI instance.
 
         Returns:
             AsyncZabbixAPI: Authenticated API instance ready for requests.
         """
-        # If we don't yet have an API instance, create and login.
-        if self._api is None:
-            logger.debug(f"Connecting to Zabbix API at {self.config.zabbix_url}")
-            self._api = AsyncZabbixAPI(
-                url=self.config.zabbix_url,
-                token=self.config.token,
-                user=self.config.user,
-                password=self.config.password,
-                validate_certs=self.config.verify_ssl,
-                timeout=self.config.timeout,
-                skip_version_check=self.config.skip_version_check,
-            )
+        logger.debug(
+            f"Creating fresh Zabbix API connection to {self.config.zabbix_url}"
+        )
+        api = AsyncZabbixAPI(
+            url=self.config.zabbix_url,
+            token=self.config.token,
+            user=self.config.user,
+            password=self.config.password,
+            validate_certs=self.config.verify_ssl,
+            timeout=self.config.timeout,
+            skip_version_check=self.config.skip_version_check,
+        )
+        await api.login()
+        logger.debug(f"Connected to Zabbix API version {api.version}")
+        return api
 
-            await self._api.login()
-            logger.debug(f"Connected to Zabbix API version {self._api.version}")
+    async def get_api(self) -> AsyncZabbixAPI:
+        """Return a fresh authenticated API instance (convenience for direct callers).
 
-            return self._api
-
-        # If we already have an API instance, verify the session is still valid.
-        try:
-            valid = await self._api.check_auth()
-        except Exception:
-            logger.exception(
-                "Error while checking Zabbix API authentication; marking session as invalid"
-            )
-            valid = False
-
-        if not valid:
-            logger.info("Zabbix API session invalid or closed; reconnecting...")
-            try:
-                await self._api.logout()
-            except Exception:
-                logger.debug("Ignoring exception during logout while reconnecting")
-
-            self._api = AsyncZabbixAPI(
-                url=self.config.zabbix_url,
-                token=self.config.token,
-                user=self.config.user,
-                password=self.config.password,
-                validate_certs=self.config.verify_ssl,
-                timeout=self.config.timeout,
-                skip_version_check=self.config.skip_version_check,
-            )
-
-            await self._api.login()
-            logger.debug(f"Reconnected to Zabbix API version {self._api.version}")
-
-        return self._api
+        Returns:
+            AsyncZabbixAPI: Authenticated API instance ready for requests.
+        """
+        return await self._create_fresh_api()
 
     async def close(self):
-        """Close the Zabbix API session."""
-        if self._api is not None:
-            await self._api.logout()
-            self._api = None
+        """Close any lingering task-keyed API sessions."""
+        for api in list(self._task_apis.values()):
+            try:
+                await api.logout()
+            except Exception:
+                logger.debug("Ignoring exception while closing Zabbix API session")
+        self._task_apis.clear()
+        self._api = None
 
     @property
     def api(self) -> AsyncZabbixAPI | None:
-        """Get the underlying AsyncZabbixAPI instance."""
-        return self._api
+        """Return the task-local API instance, or None outside a context manager."""
+        task = asyncio.current_task()
+        key = id(task) if task is not None else 0
+        return self._task_apis.get(key, self._api)
 
 
 def get_zabbix_config_from_env() -> ZabbixConfig:
