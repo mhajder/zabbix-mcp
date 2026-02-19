@@ -30,7 +30,7 @@ classifiers = [
 ]
 
 dependencies = [
-    "fastmcp>=2.10.0",
+    "fastmcp>=3.0.0,<4",
     "pydantic>=2.0.0",
     "python-dotenv>=1.0.0",
     "zabbix-utils[async]>=2.0.4",
