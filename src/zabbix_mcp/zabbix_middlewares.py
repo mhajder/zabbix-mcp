@@ -27,8 +27,6 @@ class ReadOnlyTagMiddleware(Middleware):
             name = getattr(tool, "name", repr(tool))
             if "read-only" not in tags:
                 logger.debug(f"[READ-ONLY] Disabling tool: {name} (tags: {tags})")
-                if hasattr(tool, "disable"):
-                    tool.disable()
                 raise ToolError("This tool is disabled in read-only mode.")
             else:
                 logger.debug(f"[READ-ONLY] Allowing tool: {name} (tags: {tags})")
@@ -47,8 +45,6 @@ class ReadOnlyTagMiddleware(Middleware):
             name = getattr(resource, "name", repr(resource))
             if "read-only" not in tags:
                 logger.debug(f"[READ-ONLY] Disabling resource: {name} (tags: {tags})")
-                if hasattr(resource, "disable"):
-                    resource.disable()
                 raise ResourceError("This resource is disabled in read-only mode.")
             else:
                 logger.debug(f"[READ-ONLY] Allowing resource: {name} (tags: {tags})")
@@ -67,8 +63,6 @@ class ReadOnlyTagMiddleware(Middleware):
             name = getattr(prompt, "name", repr(prompt))
             if "read-only" not in tags:
                 logger.debug(f"[READ-ONLY] Disabling prompt: {name} (tags: {tags})")
-                if hasattr(prompt, "disable"):
-                    prompt.disable()
                 raise PromptError("This prompt is disabled in read-only mode.")
             else:
                 logger.debug(f"[READ-ONLY] Allowing prompt: {name} (tags: {tags})")
@@ -94,8 +88,6 @@ class ReadOnlyTagMiddleware(Middleware):
                     logger.debug(
                         f"[READ-ONLY] Disabling tool in list: {name} (tags: {tags})"
                     )
-                    if hasattr(tool, "disable"):
-                        tool.disable()
             return filtered
         return result
 
@@ -118,8 +110,6 @@ class ReadOnlyTagMiddleware(Middleware):
                     logger.debug(
                         f"[READ-ONLY] Disabling resource in list: {name} (tags: {tags})"
                     )
-                    if hasattr(resource, "disable"):
-                        resource.disable()
             return filtered
         return result
 
@@ -142,8 +132,6 @@ class ReadOnlyTagMiddleware(Middleware):
                     logger.debug(
                         f"[READ-ONLY] Disabling prompt in list: {name} (tags: {tags})"
                     )
-                    if hasattr(prompt, "disable"):
-                        prompt.disable()
             return filtered
         return result
 
@@ -185,8 +173,6 @@ class DisabledTagsMiddleware(Middleware):
                 logger.debug(
                     f"[DISABLED-TAGS] Disabling tool: {name} (disabled tags found: {disabled_tags_found})"
                 )
-                if hasattr(tool, "disable"):
-                    tool.disable()
                 raise ToolError(
                     f"This tool is disabled due to disabled tags: {disabled_tags_found}"
                 )
@@ -211,8 +197,6 @@ class DisabledTagsMiddleware(Middleware):
                 logger.debug(
                     f"[DISABLED-TAGS] Disabling resource: {name} (disabled tags found: {disabled_tags_found})"
                 )
-                if hasattr(resource, "disable"):
-                    resource.disable()
                 raise ResourceError(
                     f"This resource is disabled due to disabled tags: {disabled_tags_found}"
                 )
@@ -239,8 +223,6 @@ class DisabledTagsMiddleware(Middleware):
                 logger.debug(
                     f"[DISABLED-TAGS] Disabling prompt: {name} (disabled tags found: {disabled_tags_found})"
                 )
-                if hasattr(prompt, "disable"):
-                    prompt.disable()
                 raise PromptError(
                     f"This prompt is disabled due to disabled tags: {disabled_tags_found}"
                 )
@@ -265,8 +247,6 @@ class DisabledTagsMiddleware(Middleware):
                     logger.debug(
                         f"[DISABLED-TAGS] Disabling tool in list: {name} (disabled tags found: {disabled_tags_found})"
                     )
-                    if hasattr(tool, "disable"):
-                        tool.disable()
                 else:
                     logger.debug(
                         f"[DISABLED-TAGS] Allowing tool in list: {name} (tags: {tags})"
@@ -291,8 +271,6 @@ class DisabledTagsMiddleware(Middleware):
                     logger.debug(
                         f"[DISABLED-TAGS] Disabling resource in list: {name} (disabled tags found: {disabled_tags_found})"
                     )
-                    if hasattr(resource, "disable"):
-                        resource.disable()
                 else:
                     logger.debug(
                         f"[DISABLED-TAGS] Allowing resource in list: {name} (tags: {tags})"
@@ -317,8 +295,6 @@ class DisabledTagsMiddleware(Middleware):
                     logger.debug(
                         f"[DISABLED-TAGS] Disabling prompt in list: {name} (disabled tags found: {disabled_tags_found})"
                     )
-                    if hasattr(prompt, "disable"):
-                        prompt.disable()
                 else:
                     logger.debug(
                         f"[DISABLED-TAGS] Allowing prompt in list: {name} (tags: {tags})"
