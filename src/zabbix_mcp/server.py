@@ -18,8 +18,6 @@ from fastmcp.server.middleware.rate_limiting import SlidingWindowRateLimitingMid
 from zabbix_mcp.sentry_init import init_sentry
 from zabbix_mcp.zabbix_client import get_transport_config_from_env
 from zabbix_mcp.zabbix_client import get_zabbix_config_from_env
-from zabbix_mcp.zabbix_middlewares import DisabledTagsMiddleware
-from zabbix_mcp.zabbix_middlewares import ReadOnlyTagMiddleware
 from zabbix_mcp.zabbix_tools import register_tools
 
 # Load environment variables
@@ -76,17 +74,26 @@ mcp = FastMCP(
 # Register all tools
 register_tools(mcp, ZABBIX_CONFIG)
 
-# Apply disabled tags middleware if any tags are disabled
-if getattr(ZABBIX_CONFIG, "disabled_tags", set()):
-    logger.info(
-        f"Disabled tags configured: {ZABBIX_CONFIG.disabled_tags} - applying middleware"
-    )
-    mcp.add_middleware(DisabledTagsMiddleware(ZABBIX_CONFIG.disabled_tags))
 
-# Enforce read-only behavior via middleware
-if getattr(ZABBIX_CONFIG, "read_only_mode", False):
-    logger.info("Read-only mode is enabled - applying middleware")
-    mcp.add_middleware(ReadOnlyTagMiddleware())
+def configure_component_visibility() -> None:
+    """Apply server-level visibility transforms for read-only and disabled tags."""
+
+    disabled_tags = getattr(ZABBIX_CONFIG, "disabled_tags", set())
+    read_only_mode = getattr(ZABBIX_CONFIG, "read_only_mode", False)
+
+    if read_only_mode:
+        logger.info("Read-only mode is enabled - restricting to read-only components")
+        mcp.enable(tags={"read-only"}, only=True)
+
+    if disabled_tags:
+        logger.info(
+            "Disabled tags configured: %s - disabling matching components",
+            disabled_tags,
+        )
+        mcp.disable(tags=disabled_tags)
+
+
+configure_component_visibility()
 
 # Optional rate limiting
 if getattr(ZABBIX_CONFIG, "rate_limit_enabled", False):
