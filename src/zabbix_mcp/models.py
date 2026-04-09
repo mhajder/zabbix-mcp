@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel
 from pydantic import Field
 
@@ -37,6 +39,19 @@ class ZabbixConfig(BaseModel):
     rate_limit_max_requests: int = Field(60, description="Maximum requests per window")
     rate_limit_window_minutes: int = Field(
         1, description="Rate limit window in minutes"
+    )
+    # Tool search transform
+    tool_search_enabled: bool = Field(
+        False, description="Enable FastMCP tool-search transform (true/false)"
+    )
+    tool_search_strategy: Literal["bm25", "regex"] = Field(
+        "bm25",
+        description="Tool search strategy: 'bm25' (natural language) or 'regex'",
+    )
+    tool_search_max_results: int = Field(
+        5,
+        ge=1,
+        description="Maximum number of tools returned by search_tools",
     )
 
 

@@ -30,6 +30,7 @@ Zabbix MCP Server is a Python-based Model Context Protocol (MCP) server designed
 
 - Rate limiting and API security features
 - Read-only mode to restrict all write operations for safe monitoring
+- Optional tool-search transform for large tool catalogs
 - Bearer token authentication for HTTP transport
 - Comprehensive logging and audit trails
 - SSL/TLS support and configurable timeouts
@@ -176,6 +177,14 @@ LOG_LEVEL=INFO
 RATE_LIMIT_ENABLED=false
 RATE_LIMIT_MAX_REQUESTS=60
 RATE_LIMIT_WINDOW_MINUTES=1
+
+# Tool Search Transform (Optional)
+# Set TOOL_SEARCH_ENABLED true to replace full tool listing with search tools
+TOOL_SEARCH_ENABLED=false
+# Search strategy: bm25 (natural language) or regex (pattern matching)
+TOOL_SEARCH_STRATEGY=bm25
+# Maximum number of matching tools returned by search_tools
+TOOL_SEARCH_MAX_RESULTS=5
 
 # Sentry Error Tracking (Optional)
 # Set SENTRY_DSN to enable error tracking and performance monitoring
@@ -325,6 +334,28 @@ You can disable specific categories of tools by setting disabled tags:
 ```env
 DISABLED_TAGS=alert,bills
 ```
+
+### Tool Search for Large Toolsets
+
+FastMCP tool search can reduce prompt size for servers with many tools.
+When enabled, `list_tools` returns two synthetic tools:
+
+- `search_tools`: Finds matching tools and returns their full schemas
+- `call_tool`: Executes any discovered tool by name
+
+Enable it with:
+
+```env
+TOOL_SEARCH_ENABLED=true
+TOOL_SEARCH_STRATEGY=bm25      # bm25 or regex
+TOOL_SEARCH_MAX_RESULTS=8      # optional, default is 5
+```
+
+`bm25` supports natural language queries, while `regex` uses a regex
+`pattern` input for deterministic matching.
+
+Tool search respects existing visibility controls (read-only mode and
+disabled tags).
 
 ### Rate Limiting
 

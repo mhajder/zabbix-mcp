@@ -14,6 +14,8 @@ from dotenv import load_dotenv
 from fastmcp import FastMCP
 from fastmcp.server.auth.providers.jwt import StaticTokenVerifier
 from fastmcp.server.middleware.rate_limiting import SlidingWindowRateLimitingMiddleware
+from fastmcp.server.transforms.search import BM25SearchTransform
+from fastmcp.server.transforms.search import RegexSearchTransform
 
 from zabbix_mcp.sentry_init import init_sentry
 from zabbix_mcp.zabbix_client import get_transport_config_from_env
@@ -93,7 +95,29 @@ def configure_component_visibility() -> None:
         mcp.disable(tags=disabled_tags)
 
 
+def configure_tool_search() -> None:
+    """Apply the optional FastMCP tool-search transform."""
+
+    if not getattr(ZABBIX_CONFIG, "tool_search_enabled", False):
+        return
+
+    strategy = getattr(ZABBIX_CONFIG, "tool_search_strategy", "bm25")
+    max_results = getattr(ZABBIX_CONFIG, "tool_search_max_results", 5)
+
+    if strategy == "regex":
+        mcp.add_transform(RegexSearchTransform(max_results=max_results))
+    else:
+        mcp.add_transform(BM25SearchTransform(max_results=max_results))
+
+    logger.info(
+        "Tool search is enabled - strategy=%s, max_results=%s",
+        strategy,
+        max_results,
+    )
+
+
 configure_component_visibility()
+configure_tool_search()
 
 # Optional rate limiting
 if getattr(ZABBIX_CONFIG, "rate_limit_enabled", False):

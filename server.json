@@ -104,6 +104,27 @@
           "default": "1",
           "isRequired": false,
           "isSecret": false
+        },
+        {
+          "name": "TOOL_SEARCH_ENABLED",
+          "description": "Enable FastMCP tool search transform",
+          "default": "false",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "TOOL_SEARCH_STRATEGY",
+          "description": "Tool search strategy (bm25 or regex)",
+          "default": "bm25",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "TOOL_SEARCH_MAX_RESULTS",
+          "description": "Maximum tool search results returned by search_tools",
+          "default": "5",
+          "isRequired": false,
+          "isSecret": false
         }
       ]
     },
@@ -200,6 +221,27 @@
           "name": "RATE_LIMIT_WINDOW_MINUTES",
           "description": "Rate limit window in minutes",
           "default": "1",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "TOOL_SEARCH_ENABLED",
+          "description": "Enable FastMCP tool search transform",
+          "default": "false",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "TOOL_SEARCH_STRATEGY",
+          "description": "Tool search strategy (bm25 or regex)",
+          "default": "bm25",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "TOOL_SEARCH_MAX_RESULTS",
+          "description": "Maximum tool search results returned by search_tools",
+          "default": "5",
           "isRequired": false,
           "isSecret": false
         },
@@ -319,6 +361,27 @@
           "name": "RATE_LIMIT_WINDOW_MINUTES",
           "description": "Rate limit window in minutes",
           "default": "1",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "TOOL_SEARCH_ENABLED",
+          "description": "Enable FastMCP tool search transform",
+          "default": "false",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "TOOL_SEARCH_STRATEGY",
+          "description": "Tool search strategy (bm25 or regex)",
+          "default": "bm25",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "TOOL_SEARCH_MAX_RESULTS",
+          "description": "Maximum tool search results returned by search_tools",
+          "default": "5",
           "isRequired": false,
           "isSecret": false
         },
