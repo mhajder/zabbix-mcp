@@ -1,3 +1,17 @@
+## v0.3.0 (2026-04-09)
+
+### Feat
+
+- add optional tool search transform support
+
+### Fix
+
+- **middleware**: remove deprecated Component.disable() calls for FastMCP 3.0 compatibility (#11)
+
+### Refactor
+
+- replace tag middleware with component visibility
+
 ## v0.2.1 (2026-02-19)
 
 ### Fix
