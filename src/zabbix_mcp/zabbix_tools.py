@@ -85,7 +85,8 @@ def register_tools(mcp, config: ZabbixConfig):
         search: Annotated[
             dict[str, str] | None,
             Field(
-                default=None, description="Search criteria (e.g., {'host': 'web*'})."
+                default=None,
+                description="Search criteria (e.g., {'host': 'web'} to perform a 'LIKE' search).",
             ),
         ] = None,
         filter_params: Annotated[
@@ -117,7 +118,7 @@ def register_tools(mcp, config: ZabbixConfig):
             groupids: Filter hosts by group membership (host must belong to these groups).
             templateids: Filter hosts that use specific templates.
             proxyids: Filter hosts assigned to specific proxies.
-            search: Search pattern for host name. Supports wildcards (e.g., 'web*', '*prod').
+            search: Search pattern for host name. If no additional options are given, this will perform a 'LIKE "%...%"' search.
             filter_params: Exact match filter (e.g., {'status': '0'} for enabled hosts).
             output: 'extend' returns all fields, or specify specific field names.
             limit: Maximum number of results to return (useful for pagination).
