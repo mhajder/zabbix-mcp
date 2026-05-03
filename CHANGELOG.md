@@ -1,3 +1,9 @@
+## v0.3.1 (2026-05-03)
+
+### Fix
+
+- improve search description in host_get tool
+
 ## v0.3.0 (2026-04-09)
 
 ### Feat
