@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+from typing import Any
 
 from zabbix_utils import AsyncZabbixAPI
 
@@ -35,7 +36,7 @@ class ZabbixClient:
         self._task_apis = {}
         self._initialized = True
 
-    async def __aenter__(self) -> AsyncZabbixAPI:
+    async def __aenter__(self) -> Any:
         """Create a fresh, authenticated API instance for the current task."""
         api = await self._create_fresh_api()
         task = asyncio.current_task()
@@ -55,7 +56,7 @@ class ZabbixClient:
                 logger.debug("Ignoring exception while closing Zabbix API session")
         return False
 
-    async def _create_fresh_api(self) -> AsyncZabbixAPI:
+    async def _create_fresh_api(self) -> Any:
         """Create and return a new, authenticated AsyncZabbixAPI instance.
 
         Returns:
@@ -64,7 +65,7 @@ class ZabbixClient:
         logger.debug(
             f"Creating fresh Zabbix API connection to {self.config.zabbix_url}"
         )
-        api = AsyncZabbixAPI(
+        api: Any = AsyncZabbixAPI(
             url=self.config.zabbix_url,
             token=self.config.token,
             user=self.config.user,
@@ -77,7 +78,7 @@ class ZabbixClient:
         logger.debug(f"Connected to Zabbix API version {api.version}")
         return api
 
-    async def get_api(self) -> AsyncZabbixAPI:
+    async def get_api(self) -> Any:
         """Return a fresh authenticated API instance (convenience for direct callers).
 
         Returns:
@@ -114,7 +115,7 @@ def get_zabbix_config_from_env() -> ZabbixConfig:
         }
 
     return ZabbixConfig(
-        zabbix_url=os.getenv("ZABBIX_URL"),
+        zabbix_url=os.getenv("ZABBIX_URL", ""),
         token=os.getenv("ZABBIX_TOKEN"),
         user=os.getenv("ZABBIX_USER"),
         password=os.getenv("ZABBIX_PASSWORD"),
@@ -129,7 +130,11 @@ def get_zabbix_config_from_env() -> ZabbixConfig:
         rate_limit_max_requests=int(os.getenv("RATE_LIMIT_MAX_REQUESTS", "60")),
         rate_limit_window_minutes=int(os.getenv("RATE_LIMIT_WINDOW_MINUTES", "1")),
         tool_search_enabled=parse_bool(os.getenv("TOOL_SEARCH_ENABLED"), default=False),
-        tool_search_strategy=os.getenv("TOOL_SEARCH_STRATEGY", "bm25").lower(),
+        tool_search_strategy=(
+            "regex"
+            if os.getenv("TOOL_SEARCH_STRATEGY", "bm25").lower() == "regex"
+            else "bm25"
+        ),
         tool_search_max_results=int(os.getenv("TOOL_SEARCH_MAX_RESULTS", "5")),
     )
 

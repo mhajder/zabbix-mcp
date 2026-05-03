@@ -29,7 +29,7 @@ def register_tools(mcp, config: ZabbixConfig):
             "idempotentHint": True,
         },
     )
-    async def api_version(ctx: Context = None) -> dict:
+    async def api_version(ctx: Context) -> dict:
         """
         Get Zabbix API version information.
 
@@ -66,6 +66,7 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def host_get(
+        ctx: Context,
         hostids: Annotated[
             list[str] | None,
             Field(default=None, description="List of host IDs to retrieve."),
@@ -104,7 +105,6 @@ def register_tools(mcp, config: ZabbixConfig):
             int | None,
             Field(default=None, description="Maximum number of results.", ge=1),
         ] = None,
-        ctx: Context = None,
     ) -> dict:
         """
         Get hosts from Zabbix with optional filtering.
@@ -177,6 +177,7 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def host_create(
+        ctx: Context,
         host: Annotated[str, Field(description="Technical name of the host.")],
         groups: Annotated[
             list[dict[str, str]],
@@ -199,7 +200,6 @@ def register_tools(mcp, config: ZabbixConfig):
         description: Annotated[
             str | None, Field(default=None, description="Description.")
         ] = None,
-        ctx: Context = None,
     ) -> dict:
         """
         Create a new host in Zabbix.
@@ -261,6 +261,7 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def host_update(
+        ctx: Context,
         hostid: Annotated[str, Field(description="ID of the host to update.")],
         host: Annotated[
             str | None, Field(default=None, description="New technical name.")
@@ -274,7 +275,6 @@ def register_tools(mcp, config: ZabbixConfig):
         description: Annotated[
             str | None, Field(default=None, description="New description.")
         ] = None,
-        ctx: Context = None,
     ) -> dict:
         """
         Update an existing host in Zabbix.
@@ -328,8 +328,8 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def host_delete(
+        ctx: Context,
         hostids: Annotated[list[str], Field(description="List of host IDs to delete.")],
-        ctx: Context = None,
     ) -> dict:
         """
         Delete hosts from Zabbix.
@@ -375,6 +375,7 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def hostgroup_get(
+        ctx: Context,
         groupids: Annotated[
             list[str] | None, Field(default=None, description="Group IDs.")
         ] = None,
@@ -387,7 +388,6 @@ def register_tools(mcp, config: ZabbixConfig):
         output: Annotated[
             str, Field(default="extend", description="Output format.")
         ] = "extend",
-        ctx: Context = None,
     ) -> dict:
         """
         Get host groups from Zabbix.
@@ -446,8 +446,8 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def hostgroup_create(
+        ctx: Context,
         name: Annotated[str, Field(description="Name of the host group.")],
-        ctx: Context = None,
     ) -> dict:
         """
         Create a new host group in Zabbix.
@@ -489,9 +489,9 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def hostgroup_update(
+        ctx: Context,
         groupid: Annotated[str, Field(description="ID of the group to update.")],
         name: Annotated[str | None, Field(default=None)] = None,
-        ctx: Context = None,
     ) -> dict:
         """
         Update an existing host group in Zabbix.
@@ -535,8 +535,8 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def hostgroup_delete(
+        ctx: Context,
         groupids: Annotated[list[str], Field(description="Group IDs to delete.")],
-        ctx: Context = None,
     ) -> dict:
         """
         Delete host groups from Zabbix.
@@ -582,12 +582,12 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def template_get(
+        ctx: Context,
         templateids: Annotated[list[str] | None, Field(default=None)] = None,
         groupids: Annotated[list[str] | None, Field(default=None)] = None,
         hostids: Annotated[list[str] | None, Field(default=None)] = None,
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
-        ctx: Context = None,
     ) -> dict:
         """
         Get templates from Zabbix.
@@ -647,11 +647,11 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def template_create(
+        ctx: Context,
         host: Annotated[str, Field(description="Technical name of the template.")],
         groups: Annotated[list[dict[str, str]], Field(description="Host groups.")],
         name: Annotated[str | None, Field(default=None)] = None,
         description: Annotated[str | None, Field(default=None)] = None,
-        ctx: Context = None,
     ) -> dict:
         """
         Create a new template in Zabbix.
@@ -703,10 +703,10 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def template_update(
+        ctx: Context,
         templateid: Annotated[str, Field(description="ID of the template to update.")],
         name: Annotated[str | None, Field(default=None)] = None,
         description: Annotated[str | None, Field(default=None)] = None,
-        ctx: Context = None,
     ) -> dict:
         """
         Update an existing template in Zabbix.
@@ -753,8 +753,8 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def template_delete(
+        ctx: Context,
         templateids: Annotated[list[str], Field(description="Template IDs to delete.")],
-        ctx: Context = None,
     ) -> dict:
         """
         Delete templates from Zabbix.
@@ -801,6 +801,7 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def item_get(
+        ctx: Context,
         itemids: Annotated[list[str] | None, Field(default=None)] = None,
         hostids: Annotated[list[str] | None, Field(default=None)] = None,
         groupids: Annotated[list[str] | None, Field(default=None)] = None,
@@ -809,7 +810,6 @@ def register_tools(mcp, config: ZabbixConfig):
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
         limit: Annotated[int | None, Field(default=None, ge=1)] = None,
-        ctx: Context = None,
     ) -> dict:
         """
         Get items (metrics) from Zabbix.
@@ -889,6 +889,7 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def item_create(
+        ctx: Context,
         name: Annotated[str, Field(description="Item name.")],
         key_: Annotated[str, Field(description="Item key.")],
         hostid: Annotated[str, Field(description="Host ID.")],
@@ -901,7 +902,6 @@ def register_tools(mcp, config: ZabbixConfig):
         delay: Annotated[str, Field(default="1m")] = "1m",
         units: Annotated[str | None, Field(default=None)] = None,
         description: Annotated[str | None, Field(default=None)] = None,
-        ctx: Context = None,
     ) -> dict:
         """
         Create a new item in Zabbix.
@@ -976,6 +976,7 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def item_update(
+        ctx: Context,
         itemid: Annotated[str, Field(description="ID of the item to update.")],
         name: Annotated[str | None, Field(default=None)] = None,
         delay: Annotated[str | None, Field(default=None)] = None,
@@ -985,7 +986,6 @@ def register_tools(mcp, config: ZabbixConfig):
             int | None,
             Field(default=None, description="0=enabled, 1=disabled."),
         ] = None,
-        ctx: Context = None,
     ) -> dict:
         """
         Update an existing item in Zabbix.
@@ -1041,8 +1041,8 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def item_delete(
+        ctx: Context,
         itemids: Annotated[list[str], Field(description="Item IDs to delete.")],
-        ctx: Context = None,
     ) -> dict:
         """
         Delete items from Zabbix.
@@ -1088,6 +1088,7 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def trigger_get(
+        ctx: Context,
         triggerids: Annotated[list[str] | None, Field(default=None)] = None,
         hostids: Annotated[list[str] | None, Field(default=None)] = None,
         groupids: Annotated[list[str] | None, Field(default=None)] = None,
@@ -1103,7 +1104,6 @@ def register_tools(mcp, config: ZabbixConfig):
         min_severity: Annotated[
             int | None, Field(default=None, description="Minimum severity (0-5).")
         ] = None,
-        ctx: Context = None,
     ) -> dict:
         """
         Get triggers from Zabbix.
@@ -1188,6 +1188,7 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def trigger_create(
+        ctx: Context,
         description: Annotated[str, Field(description="Trigger description/name.")],
         expression: Annotated[str, Field(description="Trigger expression.")],
         priority: Annotated[int, Field(default=0, description="Severity 0-5.")] = 0,
@@ -1195,7 +1196,6 @@ def register_tools(mcp, config: ZabbixConfig):
             int, Field(default=0, description="0=enabled, 1=disabled.")
         ] = 0,
         comments: Annotated[str | None, Field(default=None)] = None,
-        ctx: Context = None,
     ) -> dict:
         """
         Create a new trigger in Zabbix.
@@ -1253,6 +1253,7 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def trigger_update(
+        ctx: Context,
         triggerid: Annotated[str, Field(description="ID of the trigger to update.")],
         description: Annotated[str | None, Field(default=None)] = None,
         expression: Annotated[str | None, Field(default=None)] = None,
@@ -1262,7 +1263,6 @@ def register_tools(mcp, config: ZabbixConfig):
             Field(default=None, description="0=enabled, 1=disabled."),
         ] = None,
         comments: Annotated[str | None, Field(default=None)] = None,
-        ctx: Context = None,
     ) -> dict:
         """
         Update an existing trigger in Zabbix.
@@ -1318,8 +1318,8 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def trigger_delete(
+        ctx: Context,
         triggerids: Annotated[list[str], Field(description="Trigger IDs to delete.")],
-        ctx: Context = None,
     ) -> dict:
         """
         Delete triggers from Zabbix.
@@ -1365,6 +1365,7 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def problem_get(
+        ctx: Context,
         eventids: Annotated[list[str] | None, Field(default=None)] = None,
         groupids: Annotated[list[str] | None, Field(default=None)] = None,
         hostids: Annotated[list[str] | None, Field(default=None)] = None,
@@ -1381,7 +1382,6 @@ def register_tools(mcp, config: ZabbixConfig):
         ] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
         limit: Annotated[int | None, Field(default=None, ge=1)] = None,
-        ctx: Context = None,
     ) -> dict:
         """
         Get problems from Zabbix.
@@ -1467,6 +1467,7 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def event_get(
+        ctx: Context,
         eventids: Annotated[list[str] | None, Field(default=None)] = None,
         groupids: Annotated[list[str] | None, Field(default=None)] = None,
         hostids: Annotated[list[str] | None, Field(default=None)] = None,
@@ -1475,7 +1476,6 @@ def register_tools(mcp, config: ZabbixConfig):
         time_till: Annotated[int | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
         limit: Annotated[int | None, Field(default=None, ge=1)] = None,
-        ctx: Context = None,
     ) -> dict:
         """
         Get events from Zabbix.
@@ -1553,13 +1553,13 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def event_acknowledge(
+        ctx: Context,
         eventids: Annotated[list[str], Field(description="Event IDs to acknowledge.")],
         action: Annotated[
             int,
             Field(default=1, description="Action: 1=ack, 2=close, 4=add message, etc."),
         ] = 1,
         message: Annotated[str | None, Field(default=None)] = None,
-        ctx: Context = None,
     ) -> dict:
         """
         Acknowledge events in Zabbix.
@@ -1614,6 +1614,7 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def history_get(
+        ctx: Context,
         itemids: Annotated[
             list[str], Field(description="Item IDs to get history for.")
         ],
@@ -1629,7 +1630,6 @@ def register_tools(mcp, config: ZabbixConfig):
         limit: Annotated[int | None, Field(default=None, ge=1)] = None,
         sortfield: Annotated[str, Field(default="clock")] = "clock",
         sortorder: Annotated[str, Field(default="DESC")] = "DESC",
-        ctx: Context = None,
     ) -> dict:
         """
         Get history data from Zabbix.
@@ -1703,11 +1703,11 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def trend_get(
+        ctx: Context,
         itemids: Annotated[list[str], Field(description="Item IDs to get trends for.")],
         time_from: Annotated[int | None, Field(default=None)] = None,
         time_till: Annotated[int | None, Field(default=None)] = None,
         limit: Annotated[int | None, Field(default=None, ge=1)] = None,
-        ctx: Context = None,
     ) -> dict:
         """
         Get trend data from Zabbix.
@@ -1781,11 +1781,11 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def user_get(
+        ctx: Context,
         userids: Annotated[list[str] | None, Field(default=None)] = None,
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
-        ctx: Context = None,
     ) -> dict:
         """
         Get users from Zabbix.
@@ -1845,6 +1845,7 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def user_create(
+        ctx: Context,
         username: Annotated[str, Field(description="Username.")],
         passwd: Annotated[str, Field(description="Password.")],
         usrgrps: Annotated[
@@ -1852,7 +1853,6 @@ def register_tools(mcp, config: ZabbixConfig):
         ],
         name: Annotated[str | None, Field(default=None)] = None,
         surname: Annotated[str | None, Field(default=None)] = None,
-        ctx: Context = None,
     ) -> dict:
         """
         Create a new user in Zabbix.
@@ -1908,6 +1908,7 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def user_update(
+        ctx: Context,
         userid: Annotated[str, Field(description="ID of the user to update.")],
         username: Annotated[str | None, Field(default=None)] = None,
         name: Annotated[str | None, Field(default=None)] = None,
@@ -1920,7 +1921,6 @@ def register_tools(mcp, config: ZabbixConfig):
                 description="User type: 1=Zabbix user, 2=Zabbix admin, 3=Zabbix super admin.",
             ),
         ] = None,
-        ctx: Context = None,
     ) -> dict:
         """
         Update an existing user in Zabbix.
@@ -1976,8 +1976,8 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def user_delete(
+        ctx: Context,
         userids: Annotated[list[str], Field(description="User IDs to delete.")],
-        ctx: Context = None,
     ) -> dict:
         """
         Delete users from Zabbix.
@@ -2023,12 +2023,12 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def proxy_get(
+        ctx: Context,
         proxyids: Annotated[list[str] | None, Field(default=None)] = None,
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
         limit: Annotated[int | None, Field(default=None, ge=1)] = None,
-        ctx: Context = None,
     ) -> dict:
         """
         Get proxies from Zabbix.
@@ -2089,12 +2089,12 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def proxy_create(
+        ctx: Context,
         name: Annotated[str, Field(description="Proxy name.")],
         operating_mode: Annotated[
             int, Field(default=0, description="0=active, 1=passive.")
         ] = 0,
         description: Annotated[str | None, Field(default=None)] = None,
-        ctx: Context = None,
     ) -> dict:
         """
         Create a new proxy in Zabbix.
@@ -2143,13 +2143,13 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def proxy_update(
+        ctx: Context,
         proxyid: Annotated[str, Field(description="ID of the proxy to update.")],
         name: Annotated[str | None, Field(default=None)] = None,
         operating_mode: Annotated[
             int | None, Field(default=None, description="0=active, 1=passive.")
         ] = None,
         description: Annotated[str | None, Field(default=None)] = None,
-        ctx: Context = None,
     ) -> dict:
         """
         Update an existing proxy in Zabbix.
@@ -2199,8 +2199,8 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def proxy_delete(
+        ctx: Context,
         proxyids: Annotated[list[str], Field(description="Proxy IDs to delete.")],
-        ctx: Context = None,
     ) -> dict:
         """
         Delete proxies from Zabbix.
@@ -2246,11 +2246,11 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def maintenance_get(
+        ctx: Context,
         maintenanceids: Annotated[list[str] | None, Field(default=None)] = None,
         groupids: Annotated[list[str] | None, Field(default=None)] = None,
         hostids: Annotated[list[str] | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
-        ctx: Context = None,
     ) -> dict:
         """
         Get maintenance periods from Zabbix.
@@ -2313,6 +2313,7 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def maintenance_create(
+        ctx: Context,
         name: Annotated[str, Field(description="Maintenance name.")],
         active_since: Annotated[int, Field(description="Start time (Unix timestamp).")],
         active_till: Annotated[int, Field(description="End time (Unix timestamp).")],
@@ -2320,7 +2321,6 @@ def register_tools(mcp, config: ZabbixConfig):
         hostids: Annotated[list[str] | None, Field(default=None)] = None,
         timeperiods: Annotated[list[dict[str, Any]] | None, Field(default=None)] = None,
         description: Annotated[str | None, Field(default=None)] = None,
-        ctx: Context = None,
     ) -> dict:
         """
         Create a new maintenance period in Zabbix.
@@ -2407,6 +2407,7 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def maintenance_update(
+        ctx: Context,
         maintenanceid: Annotated[
             str, Field(description="ID of the maintenance to update.")
         ],
@@ -2414,7 +2415,6 @@ def register_tools(mcp, config: ZabbixConfig):
         active_since: Annotated[int | None, Field(default=None)] = None,
         active_till: Annotated[int | None, Field(default=None)] = None,
         description: Annotated[str | None, Field(default=None)] = None,
-        ctx: Context = None,
     ) -> dict:
         """
         Update an existing maintenance period in Zabbix.
@@ -2470,10 +2470,10 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def maintenance_delete(
+        ctx: Context,
         maintenanceids: Annotated[
             list[str], Field(description="Maintenance IDs to delete.")
         ],
-        ctx: Context = None,
     ) -> dict:
         """
         Delete maintenance periods from Zabbix.
@@ -2522,13 +2522,13 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def action_get(
+        ctx: Context,
         actionids: Annotated[list[str] | None, Field(default=None)] = None,
         groupids: Annotated[list[str] | None, Field(default=None)] = None,
         hostids: Annotated[list[str] | None, Field(default=None)] = None,
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
-        ctx: Context = None,
     ) -> dict:
         """
         Get actions from Zabbix.
@@ -2596,11 +2596,11 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def mediatype_get(
+        ctx: Context,
         mediatypeids: Annotated[list[str] | None, Field(default=None)] = None,
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
-        ctx: Context = None,
     ) -> dict:
         """
         Get media types from Zabbix.
@@ -2661,13 +2661,13 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def graph_get(
+        ctx: Context,
         graphids: Annotated[list[str] | None, Field(default=None)] = None,
         hostids: Annotated[list[str] | None, Field(default=None)] = None,
         templateids: Annotated[list[str] | None, Field(default=None)] = None,
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
-        ctx: Context = None,
     ) -> dict:
         """
         Get graphs from Zabbix.
@@ -2734,13 +2734,13 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def discoveryrule_get(
+        ctx: Context,
         itemids: Annotated[list[str] | None, Field(default=None)] = None,
         hostids: Annotated[list[str] | None, Field(default=None)] = None,
         templateids: Annotated[list[str] | None, Field(default=None)] = None,
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
-        ctx: Context = None,
     ) -> dict:
         """
         Get discovery rules from Zabbix.
@@ -2804,13 +2804,13 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def itemprototype_get(
+        ctx: Context,
         itemids: Annotated[list[str] | None, Field(default=None)] = None,
         hostids: Annotated[list[str] | None, Field(default=None)] = None,
         discoveryids: Annotated[list[str] | None, Field(default=None)] = None,
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
-        ctx: Context = None,
     ) -> dict:
         """
         Get item prototypes from Zabbix.
@@ -2874,11 +2874,11 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def drule_get(
+        ctx: Context,
         druleids: Annotated[list[str] | None, Field(default=None)] = None,
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
-        ctx: Context = None,
     ) -> dict:
         """
         Get network discovery rules from Zabbix.
@@ -2935,6 +2935,7 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def configuration_export(
+        ctx: Context,
         format_type: Annotated[
             str,
             Field(
@@ -2949,7 +2950,6 @@ def register_tools(mcp, config: ZabbixConfig):
         hostids: Annotated[list[str] | None, Field(default=None)] = None,
         templateids: Annotated[list[str] | None, Field(default=None)] = None,
         groupids: Annotated[list[str] | None, Field(default=None)] = None,
-        ctx: Context = None,
     ) -> dict:
         """
         Export Zabbix configurations.
@@ -3002,6 +3002,7 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def configuration_import(
+        ctx: Context,
         content: Annotated[str, Field(description="Configuration content to import.")],
         format_type: Annotated[
             str,
@@ -3010,7 +3011,6 @@ def register_tools(mcp, config: ZabbixConfig):
                 description="Import format: 'json' or 'xml'.",
             ),
         ] = "json",
-        ctx: Context = None,
     ) -> dict:
         """
         Import configurations into Zabbix.
@@ -3059,12 +3059,12 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def sla_get(
+        ctx: Context,
         slaids: Annotated[list[str] | None, Field(default=None)] = None,
         serviceids: Annotated[list[str] | None, Field(default=None)] = None,
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
-        ctx: Context = None,
     ) -> dict:
         """
         Get SLAs from Zabbix.
@@ -3125,12 +3125,12 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def service_get(
+        ctx: Context,
         serviceids: Annotated[list[str] | None, Field(default=None)] = None,
         parentids: Annotated[list[str] | None, Field(default=None)] = None,
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
-        ctx: Context = None,
     ) -> dict:
         """
         Get services from Zabbix.
@@ -3194,13 +3194,13 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def script_get(
+        ctx: Context,
         scriptids: Annotated[list[str] | None, Field(default=None)] = None,
         hostids: Annotated[list[str] | None, Field(default=None)] = None,
         groupids: Annotated[list[str] | None, Field(default=None)] = None,
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
-        ctx: Context = None,
     ) -> dict:
         """
         Get scripts from Zabbix.
@@ -3263,9 +3263,9 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def script_execute(
+        ctx: Context,
         scriptid: Annotated[str, Field(description="Script ID to execute.")],
         hostid: Annotated[str, Field(description="Host ID to execute the script on.")],
-        ctx: Context = None,
     ) -> dict:
         """
         Execute a script on a host in Zabbix.
@@ -3312,6 +3312,7 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def usermacro_get(
+        ctx: Context,
         hostmacroids: Annotated[list[str] | None, Field(default=None)] = None,
         globalmacroids: Annotated[list[str] | None, Field(default=None)] = None,
         hostids: Annotated[list[str] | None, Field(default=None)] = None,
@@ -3322,7 +3323,6 @@ def register_tools(mcp, config: ZabbixConfig):
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
-        ctx: Context = None,
     ) -> dict:
         """
         Get user macros from Zabbix.
@@ -3392,6 +3392,7 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def usermacro_create(
+        ctx: Context,
         hostid: Annotated[str, Field(description="Host ID for the macro.")],
         macro: Annotated[str, Field(description="Macro name (e.g., {$MYMACRO}).")],
         value: Annotated[str, Field(description="Macro value.")],
@@ -3399,7 +3400,6 @@ def register_tools(mcp, config: ZabbixConfig):
             int, Field(default=0, description="0=text, 1=secret, 2=vault.")
         ] = 0,
         description: Annotated[str | None, Field(default=None)] = None,
-        ctx: Context = None,
     ) -> dict:
         """
         Create a new host macro in Zabbix.
@@ -3457,10 +3457,10 @@ def register_tools(mcp, config: ZabbixConfig):
         },
     )
     async def usermacro_delete(
+        ctx: Context,
         hostmacroids: Annotated[
             list[str], Field(description="Host macro IDs to delete.")
         ],
-        ctx: Context = None,
     ) -> dict:
         """
         Delete host macros from Zabbix.
