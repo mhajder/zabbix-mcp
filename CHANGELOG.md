@@ -1,3 +1,9 @@
+## v0.3.2 (2026-05-09)
+
+### Fix
+
+- update release version distribution name in init_sentry function
+
 ## v0.3.1 (2026-05-03)
 
 ### Fix
