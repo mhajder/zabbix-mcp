@@ -61,7 +61,7 @@ def init_sentry() -> bool:
             from importlib.metadata import version
 
             try:
-                release = version("librenms-mcp")
+                release = version("zabbix-mcp")
             except PackageNotFoundError:
                 release = None
 
