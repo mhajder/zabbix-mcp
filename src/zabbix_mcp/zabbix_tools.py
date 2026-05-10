@@ -105,6 +105,34 @@ def register_tools(mcp, config: ZabbixConfig):
             int | None,
             Field(default=None, description="Maximum number of results.", ge=1),
         ] = None,
+        select_groups: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, include the host groups each host belongs to in the response (selectGroups=extend).",
+            ),
+        ] = False,
+        select_templates: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, include the templates linked to each host in the response (selectTemplates=extend).",
+            ),
+        ] = False,
+        select_interfaces: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, include the interfaces for each host in the response (selectInterfaces=extend).",
+            ),
+        ] = False,
+        select_tags: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, include the tags for each host in the response (selectTags=extend).",
+            ),
+        ] = False,
     ) -> dict:
         """
         Get hosts from Zabbix with optional filtering.
@@ -122,6 +150,10 @@ def register_tools(mcp, config: ZabbixConfig):
             filter_params: Exact match filter (e.g., {'status': '0'} for enabled hosts).
             output: 'extend' returns all fields, or specify specific field names.
             limit: Maximum number of results to return (useful for pagination).
+            select_groups: If true, each host includes a 'groups' list with its host groups.
+            select_templates: If true, each host includes a 'parentTemplates' list with linked templates.
+            select_interfaces: If true, each host includes an 'interfaces' list.
+            select_tags: If true, each host includes a 'tags' list.
 
         Returns:
             dict: Contains 'hosts' list with host objects and 'count' of results returned.
@@ -159,6 +191,14 @@ def register_tools(mcp, config: ZabbixConfig):
                 params["filter"] = filter_params
             if limit:
                 params["limit"] = limit
+            if select_groups:
+                params["selectGroups"] = "extend"
+            if select_templates:
+                params["selectParentTemplates"] = "extend"
+            if select_interfaces:
+                params["selectInterfaces"] = "extend"
+            if select_tags:
+                params["selectTags"] = "extend"
 
             async with ZabbixClient(config) as api:
                 result = await api.host.get(**params)
@@ -388,6 +428,19 @@ def register_tools(mcp, config: ZabbixConfig):
         output: Annotated[
             str, Field(default="extend", description="Output format.")
         ] = "extend",
+        limit: Annotated[
+            int | None,
+            Field(
+                default=None, description="Maximum number of groups to return.", ge=1
+            ),
+        ] = None,
+        select_hosts: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, include the hosts in each group in the response (selectHosts=extend).",
+            ),
+        ] = False,
     ) -> dict:
         """
         Get host groups from Zabbix.
@@ -402,6 +455,7 @@ def register_tools(mcp, config: ZabbixConfig):
             search: Substring search in group name. Matches partial names like 'Web' finds 'Web Servers'.
                     Case-sensitive partial match.
             limit: Maximum number of groups to return (default unlimited). Useful for large deployments.
+            select_hosts: If true, include the hosts in each group.
 
         Returns:
             dict: Contains 'hostgroups' list with group objects (id, name) and 'success' flag.
@@ -429,6 +483,10 @@ def register_tools(mcp, config: ZabbixConfig):
                 params["hostids"] = hostids
             if search:
                 params["search"] = search
+            if limit:
+                params["limit"] = limit
+            if select_hosts:
+                params["selectHosts"] = "extend"
 
             async with ZabbixClient(config) as api:
                 result = await api.hostgroup.get(**params)
@@ -588,6 +646,42 @@ def register_tools(mcp, config: ZabbixConfig):
         hostids: Annotated[list[str] | None, Field(default=None)] = None,
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
+        limit: Annotated[int | None, Field(default=None, ge=1)] = None,
+        select_groups: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, include the template groups the templates belong to (selectGroups=extend).",
+            ),
+        ] = False,
+        select_hosts: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, include the hosts that are linked to the templates (selectHosts=extend).",
+            ),
+        ] = False,
+        select_templates: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, include the templates that are linked to these templates directly (selectTemplates=extend).",
+            ),
+        ] = False,
+        select_macros: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, include the macros for the templates (selectMacros=extend).",
+            ),
+        ] = False,
+        select_tags: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, include the tags for the templates (selectTags=extend).",
+            ),
+        ] = False,
     ) -> dict:
         """
         Get templates from Zabbix.
@@ -600,6 +694,11 @@ def register_tools(mcp, config: ZabbixConfig):
                          Find template IDs with a search or from host associations.
             search: Substring search in template name. Matches partial names like 'Linux' finds 'Linux Server Template'.
             limit: Maximum number of templates to return (default unlimited).
+            select_groups: If true, each template includes a 'groups' list with its template groups.
+            select_hosts: If true, each template includes a 'hosts' list with linked hosts.
+            select_templates: If true, each template includes a 'templates' list with linked templates.
+            select_macros: If true, each template includes a 'macros' list.
+            select_tags: If true, each template includes a 'tags' list.
 
         Returns:
             dict: Contains 'templates' list with template objects and 'success' flag.
@@ -630,6 +729,18 @@ def register_tools(mcp, config: ZabbixConfig):
                 params["hostids"] = hostids
             if search:
                 params["search"] = search
+            if limit:
+                params["limit"] = limit
+            if select_groups:
+                params["selectGroups"] = "extend"
+            if select_hosts:
+                params["selectHosts"] = "extend"
+            if select_templates:
+                params["selectTemplates"] = "extend"
+            if select_macros:
+                params["selectMacros"] = "extend"
+            if select_tags:
+                params["selectTags"] = "extend"
 
             async with ZabbixClient(config) as api:
                 result = await api.template.get(**params)
@@ -810,6 +921,27 @@ def register_tools(mcp, config: ZabbixConfig):
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
         limit: Annotated[int | None, Field(default=None, ge=1)] = None,
+        select_hosts: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, include the hosts each item belongs to in the response (selectHosts=extend).",
+            ),
+        ] = False,
+        select_tags: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, include the tags for each item in the response (selectTags=extend).",
+            ),
+        ] = False,
+        select_triggers: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, include the triggers for each item in the response (selectTriggers=extend).",
+            ),
+        ] = False,
     ) -> dict:
         """
         Get items (metrics) from Zabbix.
@@ -825,6 +957,9 @@ def register_tools(mcp, config: ZabbixConfig):
             search: Dictionary with search criteria like {'name': 'CPU'} for substring matching.
             filter_params: Additional filter parameters for advanced filtering.
             limit: Maximum number of items to return (default unlimited).
+            select_hosts: If true, include the hosts each item belongs to.
+            select_tags: If true, include the tags for each item.
+            select_triggers: If true, include the triggers associated with each item.
 
         Returns:
             dict: Contains 'items' list with item objects and 'success' flag.
@@ -872,6 +1007,12 @@ def register_tools(mcp, config: ZabbixConfig):
                 params["filter"] = filter_params
             if limit:
                 params["limit"] = limit
+            if select_hosts:
+                params["selectHosts"] = "extend"
+            if select_tags:
+                params["selectTags"] = "extend"
+            if select_triggers:
+                params["selectTriggers"] = "extend"
 
             async with ZabbixClient(config) as api:
                 result = await api.item.get(**params)
@@ -1507,6 +1648,41 @@ def register_tools(mcp, config: ZabbixConfig):
         time_till: Annotated[int | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
         limit: Annotated[int | None, Field(default=None, ge=1)] = None,
+        acknowledged: Annotated[
+            bool | None,
+            Field(
+                default=None,
+                description="If false, return only unacknowledged events. If true, return only acknowledged events.",
+            ),
+        ] = None,
+        suppressed: Annotated[
+            bool | None,
+            Field(
+                default=None,
+                description="If false, return only unsuppressed events. If true, return only suppressed events.",
+            ),
+        ] = None,
+        select_hosts: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, include the hosts each event belongs to in the response (selectHosts=extend).",
+            ),
+        ] = False,
+        select_related_object: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, include the related object (e.g., trigger) in the response (selectRelatedObject=extend).",
+            ),
+        ] = False,
+        select_tags: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, include the tags for each event in the response (selectTags=extend).",
+            ),
+        ] = False,
     ) -> dict:
         """
         Get events from Zabbix.
@@ -1523,6 +1699,11 @@ def register_tools(mcp, config: ZabbixConfig):
             time_from: Unix timestamp to filter events from this time onwards.
             time_till: Unix timestamp to filter events up to this time.
             limit: Maximum number of events to return (default unlimited).
+            acknowledged: False = unacknowledged only, True = acknowledged only, None = all.
+            suppressed: False = unsuppressed only, True = suppressed only, None = all.
+            select_hosts: If true, include the hosts each event belongs to.
+            select_related_object: If true, include the related object (like trigger) that generated the event.
+            select_tags: If true, include the tags for each event.
 
         Returns:
             dict: Contains 'events' list with event objects and 'count' of returned events.
@@ -1567,6 +1748,16 @@ def register_tools(mcp, config: ZabbixConfig):
                 params["time_till"] = time_till
             if limit:
                 params["limit"] = limit
+            if acknowledged is not None:
+                params["acknowledged"] = acknowledged
+            if suppressed is not None:
+                params["suppressed"] = suppressed
+            if select_hosts:
+                params["selectHosts"] = "extend"
+            if select_related_object:
+                params["selectRelatedObject"] = "extend"
+            if select_tags:
+                params["selectTags"] = "extend"
 
             async with ZabbixClient(config) as api:
                 result = await api.event.get(**params)
@@ -2699,6 +2890,28 @@ def register_tools(mcp, config: ZabbixConfig):
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
+        limit: Annotated[int | None, Field(default=None, ge=1)] = None,
+        select_items: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, include the items contained in each graph (selectGraphItems=extend).",
+            ),
+        ] = False,
+        select_hosts: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, include the hosts that the graphs belong to (selectHosts=extend).",
+            ),
+        ] = False,
+        select_templates: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, include the templates that the graphs belong to (selectTemplates=extend).",
+            ),
+        ] = False,
     ) -> dict:
         """
         Get graphs from Zabbix.
@@ -2712,6 +2925,10 @@ def register_tools(mcp, config: ZabbixConfig):
             templateids: List of template IDs to get graphs from.
             search: Dictionary with search criteria like {'name': 'CPU'}.
             filter_params: Additional filter parameters for advanced filtering.
+            limit: Maximum number of graphs to return (default unlimited).
+            select_items: If true, each graph includes a 'gitems' list with graph items.
+            select_hosts: If true, each graph includes a 'hosts' list.
+            select_templates: If true, each graph includes a 'templates' list.
 
         Returns:
             dict: Contains 'graphs' list with graph objects and 'count' of returned graphs.
@@ -2744,6 +2961,14 @@ def register_tools(mcp, config: ZabbixConfig):
                 params["search"] = search
             if filter_params:
                 params["filter"] = filter_params
+            if limit:
+                params["limit"] = limit
+            if select_items:
+                params["selectGraphItems"] = "extend"
+            if select_hosts:
+                params["selectHosts"] = "extend"
+            if select_templates:
+                params["selectTemplates"] = "extend"
 
             async with ZabbixClient(config) as api:
                 result = await api.graph.get(**params)
