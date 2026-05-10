@@ -1104,6 +1104,13 @@ def register_tools(mcp, config: ZabbixConfig):
         min_severity: Annotated[
             int | None, Field(default=None, description="Minimum severity (0-5).")
         ] = None,
+        select_hosts: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, include the hosts each trigger belongs to in the response (selectHosts=extend).",
+            ),
+        ] = False,
     ) -> dict:
         """
         Get triggers from Zabbix.
@@ -1122,6 +1129,8 @@ def register_tools(mcp, config: ZabbixConfig):
             only_true: If true, only return triggers currently in problem state.
             min_severity: Minimum severity level (0=Not classified, 1=Information, 2=Warning,
                          3=Average, 4=High, 5=Disaster). Returns triggers of this severity or higher.
+            select_hosts: If true, each trigger includes a 'hosts' list with hostid and host name.
+                         Eliminates the need for separate host lookups.
 
         Returns:
             dict: Contains 'triggers' list with trigger objects and 'success' flag.
@@ -1171,6 +1180,8 @@ def register_tools(mcp, config: ZabbixConfig):
                 params["only_true"] = only_true
             if min_severity is not None:
                 params["min_severity"] = min_severity
+            if select_hosts:
+                params["selectHosts"] = "extend"
 
             async with ZabbixClient(config) as api:
                 result = await api.trigger.get(**params)
@@ -1382,6 +1393,20 @@ def register_tools(mcp, config: ZabbixConfig):
         ] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
         limit: Annotated[int | None, Field(default=None, ge=1)] = None,
+        acknowledged: Annotated[
+            bool | None,
+            Field(
+                default=None,
+                description="If false, return only unacknowledged problems. If true, return only acknowledged problems.",
+            ),
+        ] = None,
+        suppressed: Annotated[
+            bool | None,
+            Field(
+                default=None,
+                description="If false, return only unsuppressed problems. If true, return only suppressed problems.",
+            ),
+        ] = None,
     ) -> dict:
         """
         Get problems from Zabbix.
@@ -1400,6 +1425,8 @@ def register_tools(mcp, config: ZabbixConfig):
             severities: List of severity levels to filter (0=Not classified, 1=Information, 2=Warning,
                        3=Average, 4=High, 5=Disaster).
             limit: Maximum number of problems to return (default unlimited).
+            acknowledged: False = unacknowledged only, True = acknowledged only, None = all.
+            suppressed: False = unsuppressed only, True = suppressed only, None = all.
 
         Returns:
             dict: Contains 'problems' list with problem objects and 'success' flag.
@@ -1446,6 +1473,10 @@ def register_tools(mcp, config: ZabbixConfig):
                 params["severities"] = severities
             if limit:
                 params["limit"] = limit
+            if acknowledged is not None:
+                params["acknowledged"] = acknowledged
+            if suppressed is not None:
+                params["suppressed"] = suppressed
 
             async with ZabbixClient(config) as api:
                 result = await api.problem.get(**params)
