@@ -239,11 +239,20 @@ def register_tools(mcp, config: ZabbixConfig):
     )
     async def host_create(
         ctx: Context,
-        host: Annotated[str, Field(description="Technical name of the host.")],
+        params: Annotated[
+            dict[str, Any] | None,
+            Field(
+                default=None,
+                description="Raw params dict for bulk operations. If provided, individual parameters are ignored.",
+            ),
+        ] = None,
+        host: Annotated[
+            str | None, Field(default=None, description="Technical name of the host.")
+        ] = None,
         groups: Annotated[
-            list[dict[str, str]],
-            Field(description="Host groups (e.g., [{'groupid': '1'}])."),
-        ],
+            list[dict[str, str]] | None,
+            Field(default=None, description="Host groups (e.g., [{'groupid': '1'}])."),
+        ] = None,
         interfaces: Annotated[
             list[dict[str, Any]] | None,
             Field(default=None, description="Host interfaces."),
@@ -310,16 +319,20 @@ def register_tools(mcp, config: ZabbixConfig):
         Note: Use hostgroup_get to find group IDs and template_get to find template IDs.
         """
         try:
-            await ctx.info(f"Creating host '{host}'...")
-            params: dict[str, Any] = {"host": host, "groups": groups, "status": status}
-            if interfaces:
-                params["interfaces"] = interfaces
-            if templates:
-                params["templates"] = templates
-            if name:
-                params["name"] = name
-            if description:
-                params["description"] = description
+            # Use custom params dict if provided, otherwise build from individual parameters
+            if params is None:
+                await ctx.info(f"Creating host '{host}'...")
+                params = {"host": host, "groups": groups, "status": status}
+                if interfaces:
+                    params["interfaces"] = interfaces
+                if templates:
+                    params["templates"] = templates
+                if name:
+                    params["name"] = name
+                if description:
+                    params["description"] = description
+            else:
+                await ctx.info("Creating host(s) using custom params dict...")
 
             async with ZabbixClient(config) as api:
                 result = await api.host.create(**params)
