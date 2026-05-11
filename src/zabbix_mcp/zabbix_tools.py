@@ -133,6 +133,14 @@ def register_tools(mcp, config: ZabbixConfig):
                 description="If true, include the tags for each host in the response (selectTags=extend).",
             ),
         ] = False,
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -183,6 +191,10 @@ def register_tools(mcp, config: ZabbixConfig):
         try:
             await ctx.info("Retrieving hosts...")
             params: dict[str, Any] = {"output": output}
+            if sortfield:
+                params["sortfield"] = sortfield
+            if sortorder:
+                params["sortorder"] = sortorder
             if count_output:
                 params["countOutput"] = True
 
@@ -249,6 +261,14 @@ def register_tools(mcp, config: ZabbixConfig):
         description: Annotated[
             str | None, Field(default=None, description="Description.")
         ] = None,
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -331,6 +351,14 @@ def register_tools(mcp, config: ZabbixConfig):
         description: Annotated[
             str | None, Field(default=None, description="New description.")
         ] = None,
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -393,6 +421,14 @@ def register_tools(mcp, config: ZabbixConfig):
     async def host_delete(
         ctx: Context,
         hostids: Annotated[list[str], Field(description="List of host IDs to delete.")],
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -471,6 +507,14 @@ def register_tools(mcp, config: ZabbixConfig):
                 description="If true, include the hosts in each group in the response (selectHosts=extend).",
             ),
         ] = False,
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -514,6 +558,10 @@ def register_tools(mcp, config: ZabbixConfig):
         try:
             await ctx.info("Retrieving host groups...")
             params: dict[str, Any] = {"output": output}
+            if sortfield:
+                params["sortfield"] = sortfield
+            if sortorder:
+                params["sortorder"] = sortorder
             if count_output:
                 params["countOutput"] = True
             if groupids:
@@ -545,6 +593,14 @@ def register_tools(mcp, config: ZabbixConfig):
     async def hostgroup_create(
         ctx: Context,
         name: Annotated[str, Field(description="Name of the host group.")],
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -596,6 +652,14 @@ def register_tools(mcp, config: ZabbixConfig):
         ctx: Context,
         groupid: Annotated[str, Field(description="ID of the group to update.")],
         name: Annotated[str | None, Field(default=None)] = None,
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -648,6 +712,14 @@ def register_tools(mcp, config: ZabbixConfig):
     async def hostgroup_delete(
         ctx: Context,
         groupids: Annotated[list[str], Field(description="Group IDs to delete.")],
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -742,6 +814,14 @@ def register_tools(mcp, config: ZabbixConfig):
                 description="If true, include the tags for the templates (selectTags=extend).",
             ),
         ] = False,
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -788,6 +868,10 @@ def register_tools(mcp, config: ZabbixConfig):
         try:
             await ctx.info("Retrieving templates...")
             params: dict[str, Any] = {"output": output}
+            if sortfield:
+                params["sortfield"] = sortfield
+            if sortorder:
+                params["sortorder"] = sortorder
             if count_output:
                 params["countOutput"] = True
             if templateids:
@@ -832,6 +916,14 @@ def register_tools(mcp, config: ZabbixConfig):
         groups: Annotated[list[dict[str, str]], Field(description="Host groups.")],
         name: Annotated[str | None, Field(default=None)] = None,
         description: Annotated[str | None, Field(default=None)] = None,
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -894,6 +986,14 @@ def register_tools(mcp, config: ZabbixConfig):
         templateid: Annotated[str, Field(description="ID of the template to update.")],
         name: Annotated[str | None, Field(default=None)] = None,
         description: Annotated[str | None, Field(default=None)] = None,
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -949,6 +1049,14 @@ def register_tools(mcp, config: ZabbixConfig):
     async def template_delete(
         ctx: Context,
         templateids: Annotated[list[str], Field(description="Template IDs to delete.")],
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -1032,6 +1140,14 @@ def register_tools(mcp, config: ZabbixConfig):
                 description="If true, include the triggers for each item in the response (selectTriggers=extend).",
             ),
         ] = False,
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -1090,6 +1206,10 @@ def register_tools(mcp, config: ZabbixConfig):
         try:
             await ctx.info("Retrieving items...")
             params: dict[str, Any] = {"output": output}
+            if sortfield:
+                params["sortfield"] = sortfield
+            if sortorder:
+                params["sortorder"] = sortorder
             if count_output:
                 params["countOutput"] = True
             if itemids:
@@ -1142,6 +1262,14 @@ def register_tools(mcp, config: ZabbixConfig):
         delay: Annotated[str, Field(default="1m")] = "1m",
         units: Annotated[str | None, Field(default=None)] = None,
         description: Annotated[str | None, Field(default=None)] = None,
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -1233,6 +1361,14 @@ def register_tools(mcp, config: ZabbixConfig):
             int | None,
             Field(default=None, description="0=enabled, 1=disabled."),
         ] = None,
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -1297,6 +1433,14 @@ def register_tools(mcp, config: ZabbixConfig):
     async def item_delete(
         ctx: Context,
         itemids: Annotated[list[str], Field(description="Item IDs to delete.")],
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -1372,6 +1516,14 @@ def register_tools(mcp, config: ZabbixConfig):
                 description="If true, include the hosts each trigger belongs to in the response (selectHosts=extend).",
             ),
         ] = False,
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -1430,6 +1582,10 @@ def register_tools(mcp, config: ZabbixConfig):
         try:
             await ctx.info("Retrieving triggers...")
             params: dict[str, Any] = {"output": output}
+            if sortfield:
+                params["sortfield"] = sortfield
+            if sortorder:
+                params["sortorder"] = sortorder
             if count_output:
                 params["countOutput"] = True
             if triggerids:
@@ -1477,6 +1633,14 @@ def register_tools(mcp, config: ZabbixConfig):
             int, Field(default=0, description="0=enabled, 1=disabled.")
         ] = 0,
         comments: Annotated[str | None, Field(default=None)] = None,
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -1551,6 +1715,14 @@ def register_tools(mcp, config: ZabbixConfig):
             Field(default=None, description="0=enabled, 1=disabled."),
         ] = None,
         comments: Annotated[str | None, Field(default=None)] = None,
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -1615,6 +1787,14 @@ def register_tools(mcp, config: ZabbixConfig):
     async def trigger_delete(
         ctx: Context,
         triggerids: Annotated[list[str], Field(description="Trigger IDs to delete.")],
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -1698,6 +1878,14 @@ def register_tools(mcp, config: ZabbixConfig):
                 description="If false, return only unsuppressed problems. If true, return only suppressed problems.",
             ),
         ] = None,
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -1753,6 +1941,10 @@ def register_tools(mcp, config: ZabbixConfig):
         try:
             await ctx.info("Retrieving problems...")
             params: dict[str, Any] = {"output": output}
+            if sortfield:
+                params["sortfield"] = sortfield
+            if sortorder:
+                params["sortorder"] = sortorder
             if count_output:
                 params["countOutput"] = True
             if eventids:
@@ -1842,6 +2034,14 @@ def register_tools(mcp, config: ZabbixConfig):
                 description="If true, include the tags for each event in the response (selectTags=extend).",
             ),
         ] = False,
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -1900,6 +2100,10 @@ def register_tools(mcp, config: ZabbixConfig):
         try:
             await ctx.info("Retrieving events...")
             params: dict[str, Any] = {"output": output}
+            if sortfield:
+                params["sortfield"] = sortfield
+            if sortorder:
+                params["sortorder"] = sortorder
             if count_output:
                 params["countOutput"] = True
             if eventids:
@@ -1950,6 +2154,14 @@ def register_tools(mcp, config: ZabbixConfig):
             Field(default=1, description="Action: 1=ack, 2=close, 4=add message, etc."),
         ] = 1,
         message: Annotated[str | None, Field(default=None)] = None,
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -2112,6 +2324,14 @@ def register_tools(mcp, config: ZabbixConfig):
         time_from: Annotated[int | None, Field(default=None)] = None,
         time_till: Annotated[int | None, Field(default=None)] = None,
         limit: Annotated[int | None, Field(default=None, ge=1)] = None,
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -2197,6 +2417,14 @@ def register_tools(mcp, config: ZabbixConfig):
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -2240,6 +2468,10 @@ def register_tools(mcp, config: ZabbixConfig):
         try:
             await ctx.info("Retrieving users...")
             params: dict[str, Any] = {"output": output}
+            if sortfield:
+                params["sortfield"] = sortfield
+            if sortorder:
+                params["sortorder"] = sortorder
             if count_output:
                 params["countOutput"] = True
             if userids:
@@ -2273,6 +2505,14 @@ def register_tools(mcp, config: ZabbixConfig):
         ],
         name: Annotated[str | None, Field(default=None)] = None,
         surname: Annotated[str | None, Field(default=None)] = None,
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -2348,6 +2588,14 @@ def register_tools(mcp, config: ZabbixConfig):
                 description="User type: 1=Zabbix user, 2=Zabbix admin, 3=Zabbix super admin.",
             ),
         ] = None,
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -2412,6 +2660,14 @@ def register_tools(mcp, config: ZabbixConfig):
     async def user_delete(
         ctx: Context,
         userids: Annotated[list[str], Field(description="User IDs to delete.")],
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -2470,6 +2726,14 @@ def register_tools(mcp, config: ZabbixConfig):
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
         limit: Annotated[int | None, Field(default=None, ge=1)] = None,
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -2512,6 +2776,10 @@ def register_tools(mcp, config: ZabbixConfig):
         try:
             await ctx.info("Retrieving proxies...")
             params: dict[str, Any] = {"output": output}
+            if sortfield:
+                params["sortfield"] = sortfield
+            if sortorder:
+                params["sortorder"] = sortorder
             if count_output:
                 params["countOutput"] = True
             if proxyids:
@@ -2545,6 +2813,14 @@ def register_tools(mcp, config: ZabbixConfig):
             int, Field(default=0, description="0=active, 1=passive.")
         ] = 0,
         description: Annotated[str | None, Field(default=None)] = None,
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -2607,6 +2883,14 @@ def register_tools(mcp, config: ZabbixConfig):
             int | None, Field(default=None, description="0=active, 1=passive.")
         ] = None,
         description: Annotated[str | None, Field(default=None)] = None,
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -2665,6 +2949,14 @@ def register_tools(mcp, config: ZabbixConfig):
     async def proxy_delete(
         ctx: Context,
         proxyids: Annotated[list[str], Field(description="Proxy IDs to delete.")],
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -2722,6 +3014,14 @@ def register_tools(mcp, config: ZabbixConfig):
         groupids: Annotated[list[str] | None, Field(default=None)] = None,
         hostids: Annotated[list[str] | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -2768,6 +3068,10 @@ def register_tools(mcp, config: ZabbixConfig):
         try:
             await ctx.info("Retrieving maintenance periods...")
             params: dict[str, Any] = {"output": output}
+            if sortfield:
+                params["sortfield"] = sortfield
+            if sortorder:
+                params["sortorder"] = sortorder
             if count_output:
                 params["countOutput"] = True
             if maintenanceids:
@@ -2801,6 +3105,14 @@ def register_tools(mcp, config: ZabbixConfig):
         hostids: Annotated[list[str] | None, Field(default=None)] = None,
         timeperiods: Annotated[list[dict[str, Any]] | None, Field(default=None)] = None,
         description: Annotated[str | None, Field(default=None)] = None,
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -2902,6 +3214,14 @@ def register_tools(mcp, config: ZabbixConfig):
         active_since: Annotated[int | None, Field(default=None)] = None,
         active_till: Annotated[int | None, Field(default=None)] = None,
         description: Annotated[str | None, Field(default=None)] = None,
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -2968,6 +3288,14 @@ def register_tools(mcp, config: ZabbixConfig):
         maintenanceids: Annotated[
             list[str], Field(description="Maintenance IDs to delete.")
         ],
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -3030,6 +3358,14 @@ def register_tools(mcp, config: ZabbixConfig):
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -3073,6 +3409,10 @@ def register_tools(mcp, config: ZabbixConfig):
         try:
             await ctx.info("Retrieving actions...")
             params: dict[str, Any] = {"output": output}
+            if sortfield:
+                params["sortfield"] = sortfield
+            if sortorder:
+                params["sortorder"] = sortorder
             if count_output:
                 params["countOutput"] = True
             if actionids:
@@ -3111,6 +3451,14 @@ def register_tools(mcp, config: ZabbixConfig):
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -3151,6 +3499,10 @@ def register_tools(mcp, config: ZabbixConfig):
         try:
             await ctx.info("Retrieving media types...")
             params: dict[str, Any] = {"output": output}
+            if sortfield:
+                params["sortfield"] = sortfield
+            if sortorder:
+                params["sortorder"] = sortorder
             if count_output:
                 params["countOutput"] = True
             if mediatypeids:
@@ -3209,6 +3561,14 @@ def register_tools(mcp, config: ZabbixConfig):
                 description="If true, include the templates that the graphs belong to (selectTemplates=extend).",
             ),
         ] = False,
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -3255,6 +3615,10 @@ def register_tools(mcp, config: ZabbixConfig):
         try:
             await ctx.info("Retrieving graphs...")
             params: dict[str, Any] = {"output": output}
+            if sortfield:
+                params["sortfield"] = sortfield
+            if sortorder:
+                params["sortorder"] = sortorder
             if count_output:
                 params["countOutput"] = True
             if graphids:
@@ -3303,6 +3667,14 @@ def register_tools(mcp, config: ZabbixConfig):
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -3346,6 +3718,10 @@ def register_tools(mcp, config: ZabbixConfig):
         try:
             await ctx.info("Retrieving discovery rules...")
             params: dict[str, Any] = {"output": output}
+            if sortfield:
+                params["sortfield"] = sortfield
+            if sortorder:
+                params["sortorder"] = sortorder
             if count_output:
                 params["countOutput"] = True
             if itemids:
@@ -3382,6 +3758,14 @@ def register_tools(mcp, config: ZabbixConfig):
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -3425,6 +3809,10 @@ def register_tools(mcp, config: ZabbixConfig):
         try:
             await ctx.info("Retrieving item prototypes...")
             params: dict[str, Any] = {"output": output}
+            if sortfield:
+                params["sortfield"] = sortfield
+            if sortorder:
+                params["sortorder"] = sortorder
             if count_output:
                 params["countOutput"] = True
             if itemids:
@@ -3459,6 +3847,14 @@ def register_tools(mcp, config: ZabbixConfig):
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -3499,6 +3895,10 @@ def register_tools(mcp, config: ZabbixConfig):
         try:
             await ctx.info("Retrieving network discovery rules...")
             params: dict[str, Any] = {"output": output}
+            if sortfield:
+                params["sortfield"] = sortfield
+            if sortorder:
+                params["sortorder"] = sortorder
             if count_output:
                 params["countOutput"] = True
             if druleids:
@@ -3539,6 +3939,14 @@ def register_tools(mcp, config: ZabbixConfig):
         hostids: Annotated[list[str] | None, Field(default=None)] = None,
         templateids: Annotated[list[str] | None, Field(default=None)] = None,
         groupids: Annotated[list[str] | None, Field(default=None)] = None,
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -3607,6 +4015,14 @@ def register_tools(mcp, config: ZabbixConfig):
                 description="Import format: 'json' or 'xml'.",
             ),
         ] = "json",
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -3668,6 +4084,14 @@ def register_tools(mcp, config: ZabbixConfig):
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -3710,6 +4134,10 @@ def register_tools(mcp, config: ZabbixConfig):
         try:
             await ctx.info("Retrieving SLAs...")
             params: dict[str, Any] = {"output": output}
+            if sortfield:
+                params["sortfield"] = sortfield
+            if sortorder:
+                params["sortorder"] = sortorder
             if count_output:
                 params["countOutput"] = True
             if slaids:
@@ -3743,6 +4171,14 @@ def register_tools(mcp, config: ZabbixConfig):
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -3784,6 +4220,10 @@ def register_tools(mcp, config: ZabbixConfig):
         try:
             await ctx.info("Retrieving services...")
             params: dict[str, Any] = {"output": output}
+            if sortfield:
+                params["sortfield"] = sortfield
+            if sortorder:
+                params["sortorder"] = sortorder
             if count_output:
                 params["countOutput"] = True
             if serviceids:
@@ -3822,6 +4262,14 @@ def register_tools(mcp, config: ZabbixConfig):
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -3864,6 +4312,10 @@ def register_tools(mcp, config: ZabbixConfig):
         try:
             await ctx.info("Retrieving scripts...")
             params: dict[str, Any] = {"output": output}
+            if sortfield:
+                params["sortfield"] = sortfield
+            if sortorder:
+                params["sortorder"] = sortorder
             if count_output:
                 params["countOutput"] = True
             if scriptids:
@@ -3896,6 +4348,14 @@ def register_tools(mcp, config: ZabbixConfig):
         ctx: Context,
         scriptid: Annotated[str, Field(description="Script ID to execute.")],
         hostid: Annotated[str, Field(description="Host ID to execute the script on.")],
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -3960,6 +4420,14 @@ def register_tools(mcp, config: ZabbixConfig):
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -4005,6 +4473,10 @@ def register_tools(mcp, config: ZabbixConfig):
         try:
             await ctx.info("Retrieving user macros...")
             params: dict[str, Any] = {"output": output}
+            if sortfield:
+                params["sortfield"] = sortfield
+            if sortorder:
+                params["sortorder"] = sortorder
             if count_output:
                 params["countOutput"] = True
             if hostmacroids:
@@ -4046,6 +4518,14 @@ def register_tools(mcp, config: ZabbixConfig):
             int, Field(default=0, description="0=text, 1=secret, 2=vault.")
         ] = 0,
         description: Annotated[str | None, Field(default=None)] = None,
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -4114,6 +4594,14 @@ def register_tools(mcp, config: ZabbixConfig):
         hostmacroids: Annotated[
             list[str], Field(description="Host macro IDs to delete.")
         ],
+        sortfield: Annotated[
+            str | None,
+            Field(default=None, description="Field to sort by."),
+        ] = None,
+        sortorder: Annotated[
+            str,
+            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
+        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
