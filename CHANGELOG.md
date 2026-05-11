@@ -1,3 +1,14 @@
+## v0.4.0 (2026-05-11)
+
+### Feat
+
+- **tools**: support bulk host creation with custom params
+- **tools**: support list type for output parameter
+- **tools**: add sortfield and sortorder parameters to API tools
+- **tools**: add count-only output option to all API tools
+- **tools**: add select_* and filter parameters for relational data optimization
+- **tools**: add host resolution and problem state filters (#24)
+
 ## v0.3.2 (2026-05-09)
 
 ### Fix
