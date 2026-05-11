@@ -133,6 +133,13 @@ def register_tools(mcp, config: ZabbixConfig):
                 description="If true, include the tags for each host in the response (selectTags=extend).",
             ),
         ] = False,
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Get hosts from Zabbix with optional filtering.
@@ -176,6 +183,8 @@ def register_tools(mcp, config: ZabbixConfig):
         try:
             await ctx.info("Retrieving hosts...")
             params: dict[str, Any] = {"output": output}
+            if count_output:
+                params["countOutput"] = True
 
             if hostids:
                 params["hostids"] = hostids
@@ -240,6 +249,13 @@ def register_tools(mcp, config: ZabbixConfig):
         description: Annotated[
             str | None, Field(default=None, description="Description.")
         ] = None,
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Create a new host in Zabbix.
@@ -315,6 +331,13 @@ def register_tools(mcp, config: ZabbixConfig):
         description: Annotated[
             str | None, Field(default=None, description="New description.")
         ] = None,
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Update an existing host in Zabbix.
@@ -370,6 +393,13 @@ def register_tools(mcp, config: ZabbixConfig):
     async def host_delete(
         ctx: Context,
         hostids: Annotated[list[str], Field(description="List of host IDs to delete.")],
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Delete hosts from Zabbix.
@@ -441,6 +471,13 @@ def register_tools(mcp, config: ZabbixConfig):
                 description="If true, include the hosts in each group in the response (selectHosts=extend).",
             ),
         ] = False,
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Get host groups from Zabbix.
@@ -477,6 +514,8 @@ def register_tools(mcp, config: ZabbixConfig):
         try:
             await ctx.info("Retrieving host groups...")
             params: dict[str, Any] = {"output": output}
+            if count_output:
+                params["countOutput"] = True
             if groupids:
                 params["groupids"] = groupids
             if hostids:
@@ -506,6 +545,13 @@ def register_tools(mcp, config: ZabbixConfig):
     async def hostgroup_create(
         ctx: Context,
         name: Annotated[str, Field(description="Name of the host group.")],
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Create a new host group in Zabbix.
@@ -550,6 +596,13 @@ def register_tools(mcp, config: ZabbixConfig):
         ctx: Context,
         groupid: Annotated[str, Field(description="ID of the group to update.")],
         name: Annotated[str | None, Field(default=None)] = None,
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Update an existing host group in Zabbix.
@@ -595,6 +648,13 @@ def register_tools(mcp, config: ZabbixConfig):
     async def hostgroup_delete(
         ctx: Context,
         groupids: Annotated[list[str], Field(description="Group IDs to delete.")],
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Delete host groups from Zabbix.
@@ -682,6 +742,13 @@ def register_tools(mcp, config: ZabbixConfig):
                 description="If true, include the tags for the templates (selectTags=extend).",
             ),
         ] = False,
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Get templates from Zabbix.
@@ -721,6 +788,8 @@ def register_tools(mcp, config: ZabbixConfig):
         try:
             await ctx.info("Retrieving templates...")
             params: dict[str, Any] = {"output": output}
+            if count_output:
+                params["countOutput"] = True
             if templateids:
                 params["templateids"] = templateids
             if groupids:
@@ -763,6 +832,13 @@ def register_tools(mcp, config: ZabbixConfig):
         groups: Annotated[list[dict[str, str]], Field(description="Host groups.")],
         name: Annotated[str | None, Field(default=None)] = None,
         description: Annotated[str | None, Field(default=None)] = None,
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Create a new template in Zabbix.
@@ -818,6 +894,13 @@ def register_tools(mcp, config: ZabbixConfig):
         templateid: Annotated[str, Field(description="ID of the template to update.")],
         name: Annotated[str | None, Field(default=None)] = None,
         description: Annotated[str | None, Field(default=None)] = None,
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Update an existing template in Zabbix.
@@ -866,6 +949,13 @@ def register_tools(mcp, config: ZabbixConfig):
     async def template_delete(
         ctx: Context,
         templateids: Annotated[list[str], Field(description="Template IDs to delete.")],
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Delete templates from Zabbix.
@@ -942,6 +1032,13 @@ def register_tools(mcp, config: ZabbixConfig):
                 description="If true, include the triggers for each item in the response (selectTriggers=extend).",
             ),
         ] = False,
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Get items (metrics) from Zabbix.
@@ -993,6 +1090,8 @@ def register_tools(mcp, config: ZabbixConfig):
         try:
             await ctx.info("Retrieving items...")
             params: dict[str, Any] = {"output": output}
+            if count_output:
+                params["countOutput"] = True
             if itemids:
                 params["itemids"] = itemids
             if hostids:
@@ -1043,6 +1142,13 @@ def register_tools(mcp, config: ZabbixConfig):
         delay: Annotated[str, Field(default="1m")] = "1m",
         units: Annotated[str | None, Field(default=None)] = None,
         description: Annotated[str | None, Field(default=None)] = None,
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Create a new item in Zabbix.
@@ -1127,6 +1233,13 @@ def register_tools(mcp, config: ZabbixConfig):
             int | None,
             Field(default=None, description="0=enabled, 1=disabled."),
         ] = None,
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Update an existing item in Zabbix.
@@ -1184,6 +1297,13 @@ def register_tools(mcp, config: ZabbixConfig):
     async def item_delete(
         ctx: Context,
         itemids: Annotated[list[str], Field(description="Item IDs to delete.")],
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Delete items from Zabbix.
@@ -1252,6 +1372,13 @@ def register_tools(mcp, config: ZabbixConfig):
                 description="If true, include the hosts each trigger belongs to in the response (selectHosts=extend).",
             ),
         ] = False,
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Get triggers from Zabbix.
@@ -1303,6 +1430,8 @@ def register_tools(mcp, config: ZabbixConfig):
         try:
             await ctx.info("Retrieving triggers...")
             params: dict[str, Any] = {"output": output}
+            if count_output:
+                params["countOutput"] = True
             if triggerids:
                 params["triggerids"] = triggerids
             if hostids:
@@ -1348,6 +1477,13 @@ def register_tools(mcp, config: ZabbixConfig):
             int, Field(default=0, description="0=enabled, 1=disabled.")
         ] = 0,
         comments: Annotated[str | None, Field(default=None)] = None,
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Create a new trigger in Zabbix.
@@ -1415,6 +1551,13 @@ def register_tools(mcp, config: ZabbixConfig):
             Field(default=None, description="0=enabled, 1=disabled."),
         ] = None,
         comments: Annotated[str | None, Field(default=None)] = None,
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Update an existing trigger in Zabbix.
@@ -1472,6 +1615,13 @@ def register_tools(mcp, config: ZabbixConfig):
     async def trigger_delete(
         ctx: Context,
         triggerids: Annotated[list[str], Field(description="Trigger IDs to delete.")],
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Delete triggers from Zabbix.
@@ -1548,6 +1698,13 @@ def register_tools(mcp, config: ZabbixConfig):
                 description="If false, return only unsuppressed problems. If true, return only suppressed problems.",
             ),
         ] = None,
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Get problems from Zabbix.
@@ -1596,6 +1753,8 @@ def register_tools(mcp, config: ZabbixConfig):
         try:
             await ctx.info("Retrieving problems...")
             params: dict[str, Any] = {"output": output}
+            if count_output:
+                params["countOutput"] = True
             if eventids:
                 params["eventids"] = eventids
             if groupids:
@@ -1683,6 +1842,13 @@ def register_tools(mcp, config: ZabbixConfig):
                 description="If true, include the tags for each event in the response (selectTags=extend).",
             ),
         ] = False,
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Get events from Zabbix.
@@ -1734,6 +1900,8 @@ def register_tools(mcp, config: ZabbixConfig):
         try:
             await ctx.info("Retrieving events...")
             params: dict[str, Any] = {"output": output}
+            if count_output:
+                params["countOutput"] = True
             if eventids:
                 params["eventids"] = eventids
             if groupids:
@@ -1782,6 +1950,13 @@ def register_tools(mcp, config: ZabbixConfig):
             Field(default=1, description="Action: 1=ack, 2=close, 4=add message, etc."),
         ] = 1,
         message: Annotated[str | None, Field(default=None)] = None,
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Acknowledge events in Zabbix.
@@ -1852,6 +2027,13 @@ def register_tools(mcp, config: ZabbixConfig):
         limit: Annotated[int | None, Field(default=None, ge=1)] = None,
         sortfield: Annotated[str, Field(default="clock")] = "clock",
         sortorder: Annotated[str, Field(default="DESC")] = "DESC",
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Get history data from Zabbix.
@@ -1930,6 +2112,13 @@ def register_tools(mcp, config: ZabbixConfig):
         time_from: Annotated[int | None, Field(default=None)] = None,
         time_till: Annotated[int | None, Field(default=None)] = None,
         limit: Annotated[int | None, Field(default=None, ge=1)] = None,
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Get trend data from Zabbix.
@@ -2008,6 +2197,13 @@ def register_tools(mcp, config: ZabbixConfig):
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Get users from Zabbix.
@@ -2044,6 +2240,8 @@ def register_tools(mcp, config: ZabbixConfig):
         try:
             await ctx.info("Retrieving users...")
             params: dict[str, Any] = {"output": output}
+            if count_output:
+                params["countOutput"] = True
             if userids:
                 params["userids"] = userids
             if search:
@@ -2075,6 +2273,13 @@ def register_tools(mcp, config: ZabbixConfig):
         ],
         name: Annotated[str | None, Field(default=None)] = None,
         surname: Annotated[str | None, Field(default=None)] = None,
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Create a new user in Zabbix.
@@ -2143,6 +2348,13 @@ def register_tools(mcp, config: ZabbixConfig):
                 description="User type: 1=Zabbix user, 2=Zabbix admin, 3=Zabbix super admin.",
             ),
         ] = None,
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Update an existing user in Zabbix.
@@ -2200,6 +2412,13 @@ def register_tools(mcp, config: ZabbixConfig):
     async def user_delete(
         ctx: Context,
         userids: Annotated[list[str], Field(description="User IDs to delete.")],
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Delete users from Zabbix.
@@ -2251,6 +2470,13 @@ def register_tools(mcp, config: ZabbixConfig):
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
         limit: Annotated[int | None, Field(default=None, ge=1)] = None,
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Get proxies from Zabbix.
@@ -2286,6 +2512,8 @@ def register_tools(mcp, config: ZabbixConfig):
         try:
             await ctx.info("Retrieving proxies...")
             params: dict[str, Any] = {"output": output}
+            if count_output:
+                params["countOutput"] = True
             if proxyids:
                 params["proxyids"] = proxyids
             if search:
@@ -2317,6 +2545,13 @@ def register_tools(mcp, config: ZabbixConfig):
             int, Field(default=0, description="0=active, 1=passive.")
         ] = 0,
         description: Annotated[str | None, Field(default=None)] = None,
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Create a new proxy in Zabbix.
@@ -2372,6 +2607,13 @@ def register_tools(mcp, config: ZabbixConfig):
             int | None, Field(default=None, description="0=active, 1=passive.")
         ] = None,
         description: Annotated[str | None, Field(default=None)] = None,
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Update an existing proxy in Zabbix.
@@ -2423,6 +2665,13 @@ def register_tools(mcp, config: ZabbixConfig):
     async def proxy_delete(
         ctx: Context,
         proxyids: Annotated[list[str], Field(description="Proxy IDs to delete.")],
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Delete proxies from Zabbix.
@@ -2473,6 +2722,13 @@ def register_tools(mcp, config: ZabbixConfig):
         groupids: Annotated[list[str] | None, Field(default=None)] = None,
         hostids: Annotated[list[str] | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Get maintenance periods from Zabbix.
@@ -2512,6 +2768,8 @@ def register_tools(mcp, config: ZabbixConfig):
         try:
             await ctx.info("Retrieving maintenance periods...")
             params: dict[str, Any] = {"output": output}
+            if count_output:
+                params["countOutput"] = True
             if maintenanceids:
                 params["maintenanceids"] = maintenanceids
             if groupids:
@@ -2543,6 +2801,13 @@ def register_tools(mcp, config: ZabbixConfig):
         hostids: Annotated[list[str] | None, Field(default=None)] = None,
         timeperiods: Annotated[list[dict[str, Any]] | None, Field(default=None)] = None,
         description: Annotated[str | None, Field(default=None)] = None,
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Create a new maintenance period in Zabbix.
@@ -2637,6 +2902,13 @@ def register_tools(mcp, config: ZabbixConfig):
         active_since: Annotated[int | None, Field(default=None)] = None,
         active_till: Annotated[int | None, Field(default=None)] = None,
         description: Annotated[str | None, Field(default=None)] = None,
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Update an existing maintenance period in Zabbix.
@@ -2696,6 +2968,13 @@ def register_tools(mcp, config: ZabbixConfig):
         maintenanceids: Annotated[
             list[str], Field(description="Maintenance IDs to delete.")
         ],
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Delete maintenance periods from Zabbix.
@@ -2751,6 +3030,13 @@ def register_tools(mcp, config: ZabbixConfig):
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Get actions from Zabbix.
@@ -2787,6 +3073,8 @@ def register_tools(mcp, config: ZabbixConfig):
         try:
             await ctx.info("Retrieving actions...")
             params: dict[str, Any] = {"output": output}
+            if count_output:
+                params["countOutput"] = True
             if actionids:
                 params["actionids"] = actionids
             if groupids:
@@ -2823,6 +3111,13 @@ def register_tools(mcp, config: ZabbixConfig):
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Get media types from Zabbix.
@@ -2856,6 +3151,8 @@ def register_tools(mcp, config: ZabbixConfig):
         try:
             await ctx.info("Retrieving media types...")
             params: dict[str, Any] = {"output": output}
+            if count_output:
+                params["countOutput"] = True
             if mediatypeids:
                 params["mediatypeids"] = mediatypeids
             if search:
@@ -2912,6 +3209,13 @@ def register_tools(mcp, config: ZabbixConfig):
                 description="If true, include the templates that the graphs belong to (selectTemplates=extend).",
             ),
         ] = False,
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Get graphs from Zabbix.
@@ -2951,6 +3255,8 @@ def register_tools(mcp, config: ZabbixConfig):
         try:
             await ctx.info("Retrieving graphs...")
             params: dict[str, Any] = {"output": output}
+            if count_output:
+                params["countOutput"] = True
             if graphids:
                 params["graphids"] = graphids
             if hostids:
@@ -2997,6 +3303,13 @@ def register_tools(mcp, config: ZabbixConfig):
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Get discovery rules from Zabbix.
@@ -3033,6 +3346,8 @@ def register_tools(mcp, config: ZabbixConfig):
         try:
             await ctx.info("Retrieving discovery rules...")
             params: dict[str, Any] = {"output": output}
+            if count_output:
+                params["countOutput"] = True
             if itemids:
                 params["itemids"] = itemids
             if hostids:
@@ -3067,6 +3382,13 @@ def register_tools(mcp, config: ZabbixConfig):
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Get item prototypes from Zabbix.
@@ -3103,6 +3425,8 @@ def register_tools(mcp, config: ZabbixConfig):
         try:
             await ctx.info("Retrieving item prototypes...")
             params: dict[str, Any] = {"output": output}
+            if count_output:
+                params["countOutput"] = True
             if itemids:
                 params["itemids"] = itemids
             if hostids:
@@ -3135,6 +3459,13 @@ def register_tools(mcp, config: ZabbixConfig):
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Get network discovery rules from Zabbix.
@@ -3168,6 +3499,8 @@ def register_tools(mcp, config: ZabbixConfig):
         try:
             await ctx.info("Retrieving network discovery rules...")
             params: dict[str, Any] = {"output": output}
+            if count_output:
+                params["countOutput"] = True
             if druleids:
                 params["druleids"] = druleids
             if search:
@@ -3206,6 +3539,13 @@ def register_tools(mcp, config: ZabbixConfig):
         hostids: Annotated[list[str] | None, Field(default=None)] = None,
         templateids: Annotated[list[str] | None, Field(default=None)] = None,
         groupids: Annotated[list[str] | None, Field(default=None)] = None,
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Export Zabbix configurations.
@@ -3267,6 +3607,13 @@ def register_tools(mcp, config: ZabbixConfig):
                 description="Import format: 'json' or 'xml'.",
             ),
         ] = "json",
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Import configurations into Zabbix.
@@ -3321,6 +3668,13 @@ def register_tools(mcp, config: ZabbixConfig):
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Get SLAs from Zabbix.
@@ -3356,6 +3710,8 @@ def register_tools(mcp, config: ZabbixConfig):
         try:
             await ctx.info("Retrieving SLAs...")
             params: dict[str, Any] = {"output": output}
+            if count_output:
+                params["countOutput"] = True
             if slaids:
                 params["slaids"] = slaids
             if serviceids:
@@ -3387,6 +3743,13 @@ def register_tools(mcp, config: ZabbixConfig):
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Get services from Zabbix.
@@ -3421,6 +3784,8 @@ def register_tools(mcp, config: ZabbixConfig):
         try:
             await ctx.info("Retrieving services...")
             params: dict[str, Any] = {"output": output}
+            if count_output:
+                params["countOutput"] = True
             if serviceids:
                 params["serviceids"] = serviceids
             if parentids:
@@ -3457,6 +3822,13 @@ def register_tools(mcp, config: ZabbixConfig):
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Get scripts from Zabbix.
@@ -3492,6 +3864,8 @@ def register_tools(mcp, config: ZabbixConfig):
         try:
             await ctx.info("Retrieving scripts...")
             params: dict[str, Any] = {"output": output}
+            if count_output:
+                params["countOutput"] = True
             if scriptids:
                 params["scriptids"] = scriptids
             if hostids:
@@ -3522,6 +3896,13 @@ def register_tools(mcp, config: ZabbixConfig):
         ctx: Context,
         scriptid: Annotated[str, Field(description="Script ID to execute.")],
         hostid: Annotated[str, Field(description="Host ID to execute the script on.")],
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Execute a script on a host in Zabbix.
@@ -3579,6 +3960,13 @@ def register_tools(mcp, config: ZabbixConfig):
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str, Field(default="extend")] = "extend",
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Get user macros from Zabbix.
@@ -3617,6 +4005,8 @@ def register_tools(mcp, config: ZabbixConfig):
         try:
             await ctx.info("Retrieving user macros...")
             params: dict[str, Any] = {"output": output}
+            if count_output:
+                params["countOutput"] = True
             if hostmacroids:
                 params["hostmacroids"] = hostmacroids
             if globalmacroids:
@@ -3656,6 +4046,13 @@ def register_tools(mcp, config: ZabbixConfig):
             int, Field(default=0, description="0=text, 1=secret, 2=vault.")
         ] = 0,
         description: Annotated[str | None, Field(default=None)] = None,
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Create a new host macro in Zabbix.
@@ -3717,6 +4114,13 @@ def register_tools(mcp, config: ZabbixConfig):
         hostmacroids: Annotated[
             list[str], Field(description="Host macro IDs to delete.")
         ],
+        count_output: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, returns only the count of matched objects as an integer.",
+            ),
+        ] = False,
     ) -> dict:
         """
         Delete host macros from Zabbix.
