@@ -95,7 +95,7 @@ def register_tools(mcp, config: ZabbixConfig):
             Field(default=None, description="Filter criteria (e.g., {'status': 0})."),
         ] = None,
         output: Annotated[
-            str,
+            str | list[str],
             Field(
                 default="extend",
                 description="Output format: 'extend' or specific fields.",
@@ -492,7 +492,7 @@ def register_tools(mcp, config: ZabbixConfig):
             dict[str, str] | None, Field(default=None, description="Search.")
         ] = None,
         output: Annotated[
-            str, Field(default="extend", description="Output format.")
+            str | list[str], Field(default="extend", description="Output format.")
         ] = "extend",
         limit: Annotated[
             int | None,
@@ -777,7 +777,7 @@ def register_tools(mcp, config: ZabbixConfig):
         groupids: Annotated[list[str] | None, Field(default=None)] = None,
         hostids: Annotated[list[str] | None, Field(default=None)] = None,
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
-        output: Annotated[str, Field(default="extend")] = "extend",
+        output: Annotated[str | list[str], Field(default="extend")] = "extend",
         limit: Annotated[int | None, Field(default=None, ge=1)] = None,
         select_groups: Annotated[
             bool,
@@ -1117,7 +1117,7 @@ def register_tools(mcp, config: ZabbixConfig):
         templateids: Annotated[list[str] | None, Field(default=None)] = None,
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
-        output: Annotated[str, Field(default="extend")] = "extend",
+        output: Annotated[str | list[str], Field(default="extend")] = "extend",
         limit: Annotated[int | None, Field(default=None, ge=1)] = None,
         select_hosts: Annotated[
             bool,
@@ -1500,7 +1500,7 @@ def register_tools(mcp, config: ZabbixConfig):
         templateids: Annotated[list[str] | None, Field(default=None)] = None,
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
-        output: Annotated[str, Field(default="extend")] = "extend",
+        output: Annotated[str | list[str], Field(default="extend")] = "extend",
         limit: Annotated[int | None, Field(default=None, ge=1)] = None,
         only_true: Annotated[
             bool,
@@ -1862,7 +1862,7 @@ def register_tools(mcp, config: ZabbixConfig):
         severities: Annotated[
             list[int] | None, Field(default=None, description="Severity levels 0-5.")
         ] = None,
-        output: Annotated[str, Field(default="extend")] = "extend",
+        output: Annotated[str | list[str], Field(default="extend")] = "extend",
         limit: Annotated[int | None, Field(default=None, ge=1)] = None,
         acknowledged: Annotated[
             bool | None,
@@ -1997,7 +1997,7 @@ def register_tools(mcp, config: ZabbixConfig):
         objectids: Annotated[list[str] | None, Field(default=None)] = None,
         time_from: Annotated[int | None, Field(default=None)] = None,
         time_till: Annotated[int | None, Field(default=None)] = None,
-        output: Annotated[str, Field(default="extend")] = "extend",
+        output: Annotated[str | list[str], Field(default="extend")] = "extend",
         limit: Annotated[int | None, Field(default=None, ge=1)] = None,
         acknowledged: Annotated[
             bool | None,
@@ -2416,7 +2416,7 @@ def register_tools(mcp, config: ZabbixConfig):
         userids: Annotated[list[str] | None, Field(default=None)] = None,
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
-        output: Annotated[str, Field(default="extend")] = "extend",
+        output: Annotated[str | list[str], Field(default="extend")] = "extend",
         sortfield: Annotated[
             str | None,
             Field(default=None, description="Field to sort by."),
@@ -2724,7 +2724,7 @@ def register_tools(mcp, config: ZabbixConfig):
         proxyids: Annotated[list[str] | None, Field(default=None)] = None,
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
-        output: Annotated[str, Field(default="extend")] = "extend",
+        output: Annotated[str | list[str], Field(default="extend")] = "extend",
         limit: Annotated[int | None, Field(default=None, ge=1)] = None,
         sortfield: Annotated[
             str | None,
@@ -3013,7 +3013,7 @@ def register_tools(mcp, config: ZabbixConfig):
         maintenanceids: Annotated[list[str] | None, Field(default=None)] = None,
         groupids: Annotated[list[str] | None, Field(default=None)] = None,
         hostids: Annotated[list[str] | None, Field(default=None)] = None,
-        output: Annotated[str, Field(default="extend")] = "extend",
+        output: Annotated[str | list[str], Field(default="extend")] = "extend",
         sortfield: Annotated[
             str | None,
             Field(default=None, description="Field to sort by."),
@@ -3357,7 +3357,7 @@ def register_tools(mcp, config: ZabbixConfig):
         hostids: Annotated[list[str] | None, Field(default=None)] = None,
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
-        output: Annotated[str, Field(default="extend")] = "extend",
+        output: Annotated[str | list[str], Field(default="extend")] = "extend",
         sortfield: Annotated[
             str | None,
             Field(default=None, description="Field to sort by."),
@@ -3450,7 +3450,7 @@ def register_tools(mcp, config: ZabbixConfig):
         mediatypeids: Annotated[list[str] | None, Field(default=None)] = None,
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
-        output: Annotated[str, Field(default="extend")] = "extend",
+        output: Annotated[str | list[str], Field(default="extend")] = "extend",
         sortfield: Annotated[
             str | None,
             Field(default=None, description="Field to sort by."),
@@ -3538,7 +3538,7 @@ def register_tools(mcp, config: ZabbixConfig):
         templateids: Annotated[list[str] | None, Field(default=None)] = None,
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
-        output: Annotated[str, Field(default="extend")] = "extend",
+        output: Annotated[str | list[str], Field(default="extend")] = "extend",
         limit: Annotated[int | None, Field(default=None, ge=1)] = None,
         select_items: Annotated[
             bool,
@@ -3666,7 +3666,7 @@ def register_tools(mcp, config: ZabbixConfig):
         templateids: Annotated[list[str] | None, Field(default=None)] = None,
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
-        output: Annotated[str, Field(default="extend")] = "extend",
+        output: Annotated[str | list[str], Field(default="extend")] = "extend",
         sortfield: Annotated[
             str | None,
             Field(default=None, description="Field to sort by."),
@@ -3757,7 +3757,7 @@ def register_tools(mcp, config: ZabbixConfig):
         discoveryids: Annotated[list[str] | None, Field(default=None)] = None,
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
-        output: Annotated[str, Field(default="extend")] = "extend",
+        output: Annotated[str | list[str], Field(default="extend")] = "extend",
         sortfield: Annotated[
             str | None,
             Field(default=None, description="Field to sort by."),
@@ -3846,7 +3846,7 @@ def register_tools(mcp, config: ZabbixConfig):
         druleids: Annotated[list[str] | None, Field(default=None)] = None,
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
-        output: Annotated[str, Field(default="extend")] = "extend",
+        output: Annotated[str | list[str], Field(default="extend")] = "extend",
         sortfield: Annotated[
             str | None,
             Field(default=None, description="Field to sort by."),
@@ -4083,7 +4083,7 @@ def register_tools(mcp, config: ZabbixConfig):
         serviceids: Annotated[list[str] | None, Field(default=None)] = None,
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
-        output: Annotated[str, Field(default="extend")] = "extend",
+        output: Annotated[str | list[str], Field(default="extend")] = "extend",
         sortfield: Annotated[
             str | None,
             Field(default=None, description="Field to sort by."),
@@ -4170,7 +4170,7 @@ def register_tools(mcp, config: ZabbixConfig):
         parentids: Annotated[list[str] | None, Field(default=None)] = None,
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
-        output: Annotated[str, Field(default="extend")] = "extend",
+        output: Annotated[str | list[str], Field(default="extend")] = "extend",
         sortfield: Annotated[
             str | None,
             Field(default=None, description="Field to sort by."),
@@ -4261,7 +4261,7 @@ def register_tools(mcp, config: ZabbixConfig):
         groupids: Annotated[list[str] | None, Field(default=None)] = None,
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
-        output: Annotated[str, Field(default="extend")] = "extend",
+        output: Annotated[str | list[str], Field(default="extend")] = "extend",
         sortfield: Annotated[
             str | None,
             Field(default=None, description="Field to sort by."),
@@ -4419,7 +4419,7 @@ def register_tools(mcp, config: ZabbixConfig):
         ] = False,
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
-        output: Annotated[str, Field(default="extend")] = "extend",
+        output: Annotated[str | list[str], Field(default="extend")] = "extend",
         sortfield: Annotated[
             str | None,
             Field(default=None, description="Field to sort by."),
