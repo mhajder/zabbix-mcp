@@ -102,9 +102,21 @@ def register_tools(mcp, config: ZabbixConfig):
             ),
         ] = "extend",
         limit: Annotated[
-            int | None,
-            Field(default=None, description="Maximum number of results.", ge=1),
-        ] = None,
+            int,
+            Field(
+                default=100,
+                description="Maximum number of results to return. Default is 100.",
+                ge=1,
+            ),
+        ] = 100,
+        offset: Annotated[
+            int,
+            Field(
+                default=0,
+                description="Number of results to skip (for pagination). Requires sortfield to be set.",
+                ge=0,
+            ),
+        ] = 0,
         select_groups: Annotated[
             bool,
             Field(
@@ -164,14 +176,16 @@ def register_tools(mcp, config: ZabbixConfig):
             search: Search pattern for host name. If no additional options are given, this will perform a 'LIKE "%...%"' search.
             filter_params: Exact match filter (e.g., {'status': '0'} for enabled hosts).
             output: 'extend' returns all fields, or specify specific field names.
-            limit: Maximum number of results to return (useful for pagination).
+            limit: Maximum number of results to return (default 100). Set higher for more results.
+            offset: Number of results to skip for pagination. Use with sortfield.
             select_groups: If true, each host includes a 'groups' list with its host groups.
             select_templates: If true, each host includes a 'parentTemplates' list with linked templates.
             select_interfaces: If true, each host includes an 'interfaces' list.
             select_tags: If true, each host includes a 'tags' list.
 
         Returns:
-            dict: Contains 'hosts' list with host objects and 'count' of results returned.
+            dict: Contains 'hosts' list with host objects, 'count' of results returned,
+                  and pagination metadata ('limit', 'offset').
                   Each host contains: hostid, host (technical name), name (visible name),
                   status, groups, interfaces, and other host properties.
 
@@ -210,8 +224,9 @@ def register_tools(mcp, config: ZabbixConfig):
                 params["search"] = search
             if filter_params:
                 params["filter"] = filter_params
-            if limit:
-                params["limit"] = limit
+            params["limit"] = limit
+            if offset > 0:
+                params["offset"] = offset
             if select_groups:
                 params["selectGroups"] = "extend"
             if select_templates:
@@ -223,7 +238,12 @@ def register_tools(mcp, config: ZabbixConfig):
 
             async with ZabbixClient(config) as api:
                 result = await api.host.get(**params)
-                return {"hosts": result, "count": len(result)}
+                return {
+                    "hosts": result,
+                    "count": len(result),
+                    "limit": limit,
+                    "offset": offset,
+                }
 
         except Exception as e:
             await ctx.error(f"Error retrieving hosts: {e!s}")
@@ -508,11 +528,21 @@ def register_tools(mcp, config: ZabbixConfig):
             str | list[str], Field(default="extend", description="Output format.")
         ] = "extend",
         limit: Annotated[
-            int | None,
+            int,
             Field(
-                default=None, description="Maximum number of groups to return.", ge=1
+                default=100,
+                description="Maximum number of results to return. Default is 100.",
+                ge=1,
             ),
-        ] = None,
+        ] = 100,
+        offset: Annotated[
+            int,
+            Field(
+                default=0,
+                description="Number of results to skip (for pagination). Requires sortfield to be set.",
+                ge=0,
+            ),
+        ] = 0,
         select_hosts: Annotated[
             bool,
             Field(
@@ -548,11 +578,13 @@ def register_tools(mcp, config: ZabbixConfig):
                       Find group IDs with a search or from existing hosts.
             search: Substring search in group name. Matches partial names like 'Web' finds 'Web Servers'.
                     Case-sensitive partial match.
-            limit: Maximum number of groups to return (default unlimited). Useful for large deployments.
+            limit: Maximum number of results to return (default 100). Set higher for more results.
+            offset: Number of results to skip for pagination. Use with sortfield.
             select_hosts: If true, include the hosts in each group.
 
         Returns:
-            dict: Contains 'hostgroups' list with group objects (id, name) and 'success' flag.
+            dict: Contains 'groups' list with group objects (id, name), 'count' of results returned,
+                  and pagination metadata ('limit', 'offset').
                   Each group object has:
                   - groupid: Unique group ID
                   - name: Group name (e.g., 'Linux servers', 'Web Servers')
@@ -583,14 +615,20 @@ def register_tools(mcp, config: ZabbixConfig):
                 params["hostids"] = hostids
             if search:
                 params["search"] = search
-            if limit:
-                params["limit"] = limit
+            params["limit"] = limit
+            if offset > 0:
+                params["offset"] = offset
             if select_hosts:
                 params["selectHosts"] = "extend"
 
             async with ZabbixClient(config) as api:
                 result = await api.hostgroup.get(**params)
-                return {"groups": result, "count": len(result)}
+                return {
+                    "groups": result,
+                    "count": len(result),
+                    "limit": limit,
+                    "offset": offset,
+                }
         except Exception as e:
             await ctx.error(f"Error retrieving host groups: {e!s}")
             return {"error": str(e)}
@@ -791,7 +829,22 @@ def register_tools(mcp, config: ZabbixConfig):
         hostids: Annotated[list[str] | None, Field(default=None)] = None,
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         output: Annotated[str | list[str], Field(default="extend")] = "extend",
-        limit: Annotated[int | None, Field(default=None, ge=1)] = None,
+        limit: Annotated[
+            int,
+            Field(
+                default=100,
+                description="Maximum number of results to return. Default is 100.",
+                ge=1,
+            ),
+        ] = 100,
+        offset: Annotated[
+            int,
+            Field(
+                default=0,
+                description="Number of results to skip (for pagination). Requires sortfield to be set.",
+                ge=0,
+            ),
+        ] = 0,
         select_groups: Annotated[
             bool,
             Field(
@@ -853,7 +906,8 @@ def register_tools(mcp, config: ZabbixConfig):
             templateids: List of template IDs to get. If empty, returns all templates.
                          Find template IDs with a search or from host associations.
             search: Substring search in template name. Matches partial names like 'Linux' finds 'Linux Server Template'.
-            limit: Maximum number of templates to return (default unlimited).
+            limit: Maximum number of results to return (default 100). Set higher for more results.
+            offset: Number of results to skip for pagination. Use with sortfield.
             select_groups: If true, each template includes a 'groups' list with its template groups.
             select_hosts: If true, each template includes a 'hosts' list with linked hosts.
             select_templates: If true, each template includes a 'templates' list with linked templates.
@@ -861,7 +915,8 @@ def register_tools(mcp, config: ZabbixConfig):
             select_tags: If true, each template includes a 'tags' list.
 
         Returns:
-            dict: Contains 'templates' list with template objects and 'success' flag.
+            dict: Contains 'templates' list with template objects, 'count' of results returned,
+                  and pagination metadata ('limit', 'offset').
                   Each template object has:
                   - templateid: Unique template ID
                   - name: Template name (e.g., 'Linux Server Template')
@@ -895,8 +950,9 @@ def register_tools(mcp, config: ZabbixConfig):
                 params["hostids"] = hostids
             if search:
                 params["search"] = search
-            if limit:
-                params["limit"] = limit
+            params["limit"] = limit
+            if offset > 0:
+                params["offset"] = offset
             if select_groups:
                 params["selectGroups"] = "extend"
             if select_hosts:
@@ -910,7 +966,12 @@ def register_tools(mcp, config: ZabbixConfig):
 
             async with ZabbixClient(config) as api:
                 result = await api.template.get(**params)
-                return {"templates": result, "count": len(result)}
+                return {
+                    "templates": result,
+                    "count": len(result),
+                    "limit": limit,
+                    "offset": offset,
+                }
         except Exception as e:
             await ctx.error(f"Error retrieving templates: {e!s}")
             return {"error": str(e)}
@@ -1131,7 +1192,22 @@ def register_tools(mcp, config: ZabbixConfig):
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str | list[str], Field(default="extend")] = "extend",
-        limit: Annotated[int | None, Field(default=None, ge=1)] = None,
+        limit: Annotated[
+            int,
+            Field(
+                default=100,
+                description="Maximum number of results to return. Default is 100.",
+                ge=1,
+            ),
+        ] = 100,
+        offset: Annotated[
+            int,
+            Field(
+                default=0,
+                description="Number of results to skip (for pagination). Requires sortfield to be set.",
+                ge=0,
+            ),
+        ] = 0,
         select_hosts: Annotated[
             bool,
             Field(
@@ -1182,13 +1258,15 @@ def register_tools(mcp, config: ZabbixConfig):
             templateids: List of template IDs to get items from those templates.
             search: Dictionary with search criteria like {'name': 'CPU'} for substring matching.
             filter_params: Additional filter parameters for advanced filtering.
-            limit: Maximum number of items to return (default unlimited).
+            limit: Maximum number of results to return (default 100). Set higher for more results.
+            offset: Number of results to skip for pagination. Use with sortfield.
             select_hosts: If true, include the hosts each item belongs to.
             select_tags: If true, include the tags for each item.
             select_triggers: If true, include the triggers associated with each item.
 
         Returns:
-            dict: Contains 'items' list with item objects and 'success' flag.
+            dict: Contains 'items' list with item objects, 'count' of results returned,
+                  and pagination metadata ('limit', 'offset').
                   Each item includes:
                   - itemid: Unique item ID
                   - name: Item name (e.g., 'CPU load average')
@@ -1237,8 +1315,9 @@ def register_tools(mcp, config: ZabbixConfig):
                 params["search"] = search
             if filter_params:
                 params["filter"] = filter_params
-            if limit:
-                params["limit"] = limit
+            params["limit"] = limit
+            if offset > 0:
+                params["offset"] = offset
             if select_hosts:
                 params["selectHosts"] = "extend"
             if select_tags:
@@ -1248,7 +1327,12 @@ def register_tools(mcp, config: ZabbixConfig):
 
             async with ZabbixClient(config) as api:
                 result = await api.item.get(**params)
-                return {"items": result, "count": len(result)}
+                return {
+                    "items": result,
+                    "count": len(result),
+                    "limit": limit,
+                    "offset": offset,
+                }
         except Exception as e:
             await ctx.error(f"Error retrieving items: {e!s}")
             return {"error": str(e)}
@@ -1514,7 +1598,22 @@ def register_tools(mcp, config: ZabbixConfig):
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str | list[str], Field(default="extend")] = "extend",
-        limit: Annotated[int | None, Field(default=None, ge=1)] = None,
+        limit: Annotated[
+            int,
+            Field(
+                default=100,
+                description="Maximum number of results to return. Default is 100.",
+                ge=1,
+            ),
+        ] = 100,
+        offset: Annotated[
+            int,
+            Field(
+                default=0,
+                description="Number of results to skip (for pagination). Requires sortfield to be set.",
+                ge=0,
+            ),
+        ] = 0,
         only_true: Annotated[
             bool,
             Field(default=False, description="Only return triggers in problem state."),
@@ -1558,7 +1657,8 @@ def register_tools(mcp, config: ZabbixConfig):
             templateids: List of template IDs to get triggers from those templates.
             search: Dictionary with search criteria like {'description': 'CPU'}.
             filter_params: Additional filter parameters for advanced filtering.
-            limit: Maximum number of triggers to return (default unlimited).
+            limit: Maximum number of results to return (default 100). Set higher for more results.
+            offset: Number of results to skip for pagination. Use with sortfield.
             only_true: If true, only return triggers currently in problem state.
             min_severity: Minimum severity level (0=Not classified, 1=Information, 2=Warning,
                          3=Average, 4=High, 5=Disaster). Returns triggers of this severity or higher.
@@ -1566,7 +1666,8 @@ def register_tools(mcp, config: ZabbixConfig):
                          Eliminates the need for separate host lookups.
 
         Returns:
-            dict: Contains 'triggers' list with trigger objects and 'success' flag.
+            dict: Contains 'triggers' list with trigger objects, 'count' of results returned,
+                  and pagination metadata ('limit', 'offset').
                   Each trigger includes:
                   - triggerid: Unique trigger ID
                   - description: Trigger name/description
@@ -1613,8 +1714,9 @@ def register_tools(mcp, config: ZabbixConfig):
                 params["search"] = search
             if filter_params:
                 params["filter"] = filter_params
-            if limit:
-                params["limit"] = limit
+            params["limit"] = limit
+            if offset > 0:
+                params["offset"] = offset
             if only_true:
                 params["only_true"] = only_true
             if min_severity is not None:
@@ -1624,7 +1726,12 @@ def register_tools(mcp, config: ZabbixConfig):
 
             async with ZabbixClient(config) as api:
                 result = await api.trigger.get(**params)
-                return {"triggers": result, "count": len(result)}
+                return {
+                    "triggers": result,
+                    "count": len(result),
+                    "limit": limit,
+                    "offset": offset,
+                }
         except Exception as e:
             await ctx.error(f"Error retrieving triggers: {e!s}")
             return {"error": str(e)}
@@ -1876,7 +1983,22 @@ def register_tools(mcp, config: ZabbixConfig):
             list[int] | None, Field(default=None, description="Severity levels 0-5.")
         ] = None,
         output: Annotated[str | list[str], Field(default="extend")] = "extend",
-        limit: Annotated[int | None, Field(default=None, ge=1)] = None,
+        limit: Annotated[
+            int,
+            Field(
+                default=100,
+                description="Maximum number of results to return. Default is 100.",
+                ge=1,
+            ),
+        ] = 100,
+        offset: Annotated[
+            int,
+            Field(
+                default=0,
+                description="Number of results to skip (for pagination). Requires sortfield to be set.",
+                ge=0,
+            ),
+        ] = 0,
         acknowledged: Annotated[
             bool | None,
             Field(
@@ -1923,12 +2045,14 @@ def register_tools(mcp, config: ZabbixConfig):
             recent: If true, only return recently recovered problems.
             severities: List of severity levels to filter (0=Not classified, 1=Information, 2=Warning,
                        3=Average, 4=High, 5=Disaster).
-            limit: Maximum number of problems to return (default unlimited).
+            limit: Maximum number of results to return (default 100). Set higher for more results.
+            offset: Number of results to skip for pagination. Use with sortfield.
             acknowledged: False = unacknowledged only, True = acknowledged only, None = all.
             suppressed: False = unsuppressed only, True = suppressed only, None = all.
 
         Returns:
-            dict: Contains 'problems' list with problem objects and 'success' flag.
+            dict: Contains 'problems' list with problem objects, 'count' of results returned,
+                  and pagination metadata ('limit', 'offset').
                   Each problem includes:
                   - eventid: Event ID of the problem
                   - objectid: Trigger ID that caused the problem
@@ -1976,8 +2100,9 @@ def register_tools(mcp, config: ZabbixConfig):
                 params["recent"] = recent
             if severities:
                 params["severities"] = severities
-            if limit:
-                params["limit"] = limit
+            params["limit"] = limit
+            if offset > 0:
+                params["offset"] = offset
             if acknowledged is not None:
                 params["acknowledged"] = acknowledged
             if suppressed is not None:
@@ -1985,7 +2110,12 @@ def register_tools(mcp, config: ZabbixConfig):
 
             async with ZabbixClient(config) as api:
                 result = await api.problem.get(**params)
-                return {"problems": result, "count": len(result)}
+                return {
+                    "problems": result,
+                    "count": len(result),
+                    "limit": limit,
+                    "offset": offset,
+                }
         except Exception as e:
             await ctx.error(f"Error retrieving problems: {e!s}")
             return {"error": str(e)}
@@ -2011,7 +2141,22 @@ def register_tools(mcp, config: ZabbixConfig):
         time_from: Annotated[int | None, Field(default=None)] = None,
         time_till: Annotated[int | None, Field(default=None)] = None,
         output: Annotated[str | list[str], Field(default="extend")] = "extend",
-        limit: Annotated[int | None, Field(default=None, ge=1)] = None,
+        limit: Annotated[
+            int,
+            Field(
+                default=100,
+                description="Maximum number of results to return. Default is 100.",
+                ge=1,
+            ),
+        ] = 100,
+        offset: Annotated[
+            int,
+            Field(
+                default=0,
+                description="Number of results to skip (for pagination). Requires sortfield to be set.",
+                ge=0,
+            ),
+        ] = 0,
         acknowledged: Annotated[
             bool | None,
             Field(
@@ -2077,7 +2222,8 @@ def register_tools(mcp, config: ZabbixConfig):
             objectids: List of trigger IDs to get events from.
             time_from: Unix timestamp to filter events from this time onwards.
             time_till: Unix timestamp to filter events up to this time.
-            limit: Maximum number of events to return (default unlimited).
+            limit: Maximum number of results to return (default 100). Set higher for more results.
+            offset: Number of results to skip for pagination. Use with sortfield.
             acknowledged: False = unacknowledged only, True = acknowledged only, None = all.
             suppressed: False = unsuppressed only, True = suppressed only, None = all.
             select_hosts: If true, include the hosts each event belongs to.
@@ -2085,7 +2231,8 @@ def register_tools(mcp, config: ZabbixConfig):
             select_tags: If true, include the tags for each event.
 
         Returns:
-            dict: Contains 'events' list with event objects and 'count' of returned events.
+            dict: Contains 'events' list with event objects, 'count' of returned events,
+                  and pagination metadata ('limit', 'offset').
                   Each event includes:
                   - eventid: Unique event ID
                   - objectid: Trigger ID that generated the event
@@ -2131,8 +2278,9 @@ def register_tools(mcp, config: ZabbixConfig):
                 params["time_from"] = time_from
             if time_till:
                 params["time_till"] = time_till
-            if limit:
-                params["limit"] = limit
+            params["limit"] = limit
+            if offset > 0:
+                params["offset"] = offset
             if acknowledged is not None:
                 params["acknowledged"] = acknowledged
             if suppressed is not None:
@@ -2146,7 +2294,12 @@ def register_tools(mcp, config: ZabbixConfig):
 
             async with ZabbixClient(config) as api:
                 result = await api.event.get(**params)
-                return {"events": result, "count": len(result)}
+                return {
+                    "events": result,
+                    "count": len(result),
+                    "limit": limit,
+                    "offset": offset,
+                }
         except Exception as e:
             await ctx.error(f"Error retrieving events: {e!s}")
             return {"error": str(e)}
@@ -2249,7 +2402,22 @@ def register_tools(mcp, config: ZabbixConfig):
         ] = 0,
         time_from: Annotated[int | None, Field(default=None)] = None,
         time_till: Annotated[int | None, Field(default=None)] = None,
-        limit: Annotated[int | None, Field(default=None, ge=1)] = None,
+        limit: Annotated[
+            int,
+            Field(
+                default=100,
+                description="Maximum number of results to return. Default is 100.",
+                ge=1,
+            ),
+        ] = 100,
+        offset: Annotated[
+            int,
+            Field(
+                default=0,
+                description="Number of results to skip (for pagination). Requires sortfield to be set.",
+                ge=0,
+            ),
+        ] = 0,
         sortfield: Annotated[str, Field(default="clock")] = "clock",
         sortorder: Annotated[str, Field(default="DESC")] = "DESC",
         count_output: Annotated[
@@ -2276,12 +2444,14 @@ def register_tools(mcp, config: ZabbixConfig):
                     - 4 = Text data
             time_from: Unix timestamp to get history from this time onwards.
             time_till: Unix timestamp to get history up to this time.
-            limit: Maximum number of history points to return (default unlimited).
+            limit: Maximum number of results to return (default 100). Set higher for more results.
+            offset: Number of results to skip for pagination. Use with sortfield.
             sortfield: Field to sort by (default 'clock' = timestamp).
             sortorder: Sort direction - 'ASC' (oldest first) or 'DESC' (newest first). Default is DESC.
 
         Returns:
-            dict: Contains 'history' list with value objects and 'count' of returned values.
+            dict: Contains 'history' list with value objects, 'count' of returned values,
+                  and pagination metadata ('limit', 'offset').
                   Each value includes:
                   - itemid: Item ID this value belongs to
                   - value: The collected metric value
@@ -2313,12 +2483,18 @@ def register_tools(mcp, config: ZabbixConfig):
                 params["time_from"] = time_from
             if time_till:
                 params["time_till"] = time_till
-            if limit:
-                params["limit"] = limit
+            params["limit"] = limit
+            if offset > 0:
+                params["offset"] = offset
 
             async with ZabbixClient(config) as api:
                 result = await api.history.get(**params)
-                return {"history": result, "count": len(result)}
+                return {
+                    "history": result,
+                    "count": len(result),
+                    "limit": limit,
+                    "offset": offset,
+                }
         except Exception as e:
             await ctx.error(f"Error retrieving history: {e!s}")
             return {"error": str(e)}
@@ -2336,7 +2512,22 @@ def register_tools(mcp, config: ZabbixConfig):
         itemids: Annotated[list[str], Field(description="Item IDs to get trends for.")],
         time_from: Annotated[int | None, Field(default=None)] = None,
         time_till: Annotated[int | None, Field(default=None)] = None,
-        limit: Annotated[int | None, Field(default=None, ge=1)] = None,
+        limit: Annotated[
+            int,
+            Field(
+                default=100,
+                description="Maximum number of results to return. Default is 100.",
+                ge=1,
+            ),
+        ] = 100,
+        offset: Annotated[
+            int,
+            Field(
+                default=0,
+                description="Number of results to skip (for pagination). Requires sortfield to be set.",
+                ge=0,
+            ),
+        ] = 0,
         sortfield: Annotated[
             str | None,
             Field(default=None, description="Field to sort by."),
@@ -2364,10 +2555,12 @@ def register_tools(mcp, config: ZabbixConfig):
             itemids: List of item IDs to get trends for. Required. Find items with item_get.
             time_from: Unix timestamp to get trends from this time onwards.
             time_till: Unix timestamp to get trends up to this time.
-            limit: Maximum number of trend records to return (default unlimited).
+            limit: Maximum number of results to return (default 100). Set higher for more results.
+            offset: Number of results to skip for pagination. Use with sortfield.
 
         Returns:
-            dict: Contains 'trends' list with aggregate data and 'count' of returned records.
+            dict: Contains 'trends' list with aggregate data, 'count' of returned records,
+                  and pagination metadata ('limit', 'offset').
                   Each trend record includes:
                   - itemid: Item ID this trend belongs to
                   - clock: Unix timestamp (at hour boundaries)
@@ -2402,12 +2595,18 @@ def register_tools(mcp, config: ZabbixConfig):
                 params["time_from"] = time_from
             if time_till:
                 params["time_till"] = time_till
-            if limit:
-                params["limit"] = limit
+            params["limit"] = limit
+            if offset > 0:
+                params["offset"] = offset
 
             async with ZabbixClient(config) as api:
                 result = await api.trend.get(**params)
-                return {"trends": result, "count": len(result)}
+                return {
+                    "trends": result,
+                    "count": len(result),
+                    "limit": limit,
+                    "offset": offset,
+                }
         except Exception as e:
             await ctx.error(f"Error retrieving trends: {e!s}")
             return {"error": str(e)}
@@ -2430,6 +2629,22 @@ def register_tools(mcp, config: ZabbixConfig):
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str | list[str], Field(default="extend")] = "extend",
+        limit: Annotated[
+            int,
+            Field(
+                default=100,
+                description="Maximum number of results to return. Default is 100.",
+                ge=1,
+            ),
+        ] = 100,
+        offset: Annotated[
+            int,
+            Field(
+                default=0,
+                description="Number of results to skip (for pagination). Requires sortfield to be set.",
+                ge=0,
+            ),
+        ] = 0,
         sortfield: Annotated[
             str | None,
             Field(default=None, description="Field to sort by."),
@@ -2456,9 +2671,12 @@ def register_tools(mcp, config: ZabbixConfig):
             userids: List of user IDs to get. If empty, returns all users.
             search: Dictionary with search criteria like {'alias': 'admin'} for username matching.
             filter_params: Additional filter parameters for advanced filtering.
+            limit: Maximum number of results to return (default 100). Set higher for more results.
+            offset: Number of results to skip for pagination. Use with sortfield.
 
         Returns:
-            dict: Contains 'users' list with user objects and 'count' of returned users.
+            dict: Contains 'users' list with user objects, 'count' of returned users,
+                  and pagination metadata ('limit', 'offset').
                   Each user includes:
                   - userid: Unique user ID
                   - alias: Username login
@@ -2494,9 +2712,18 @@ def register_tools(mcp, config: ZabbixConfig):
             if filter_params:
                 params["filter"] = filter_params
 
+            params["limit"] = limit
+            if offset > 0:
+                params["offset"] = offset
+
             async with ZabbixClient(config) as api:
                 result = await api.user.get(**params)
-                return {"users": result, "count": len(result)}
+                return {
+                    "users": result,
+                    "count": len(result),
+                    "limit": limit,
+                    "offset": offset,
+                }
         except Exception as e:
             await ctx.error(f"Error retrieving users: {e!s}")
             return {"error": str(e)}
@@ -2738,7 +2965,22 @@ def register_tools(mcp, config: ZabbixConfig):
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str | list[str], Field(default="extend")] = "extend",
-        limit: Annotated[int | None, Field(default=None, ge=1)] = None,
+        limit: Annotated[
+            int,
+            Field(
+                default=100,
+                description="Maximum number of results to return. Default is 100.",
+                ge=1,
+            ),
+        ] = 100,
+        offset: Annotated[
+            int,
+            Field(
+                default=0,
+                description="Number of results to skip (for pagination). Requires sortfield to be set.",
+                ge=0,
+            ),
+        ] = 0,
         sortfield: Annotated[
             str | None,
             Field(default=None, description="Field to sort by."),
@@ -2765,10 +3007,12 @@ def register_tools(mcp, config: ZabbixConfig):
             proxyids: List of proxy IDs to get. If empty, returns all proxies.
             search: Dictionary with search criteria like {'host': 'proxy1'} for name matching.
             filter_params: Additional filter parameters for advanced filtering.
-            limit: Maximum number of proxies to return (default unlimited).
+            limit: Maximum number of results to return (default 100). Set higher for more results.
+            offset: Number of results to skip for pagination. Use with sortfield.
 
         Returns:
-            dict: Contains 'proxies' list with proxy objects and 'count' of returned proxies.
+            dict: Contains 'proxies' list with proxy objects, 'count' of returned proxies,
+                  and pagination metadata ('limit', 'offset').
                   Each proxy includes:
                   - proxyid: Unique proxy ID
                   - host: Proxy hostname/name
@@ -2801,12 +3045,18 @@ def register_tools(mcp, config: ZabbixConfig):
                 params["search"] = search
             if filter_params:
                 params["filter"] = filter_params
-            if limit:
-                params["limit"] = limit
+            params["limit"] = limit
+            if offset > 0:
+                params["offset"] = offset
 
             async with ZabbixClient(config) as api:
                 result = await api.proxy.get(**params)
-                return {"proxies": result, "count": len(result)}
+                return {
+                    "proxies": result,
+                    "count": len(result),
+                    "limit": limit,
+                    "offset": offset,
+                }
         except Exception as e:
             await ctx.error(f"Error retrieving proxies: {e!s}")
             return {"error": str(e)}
@@ -3027,6 +3277,22 @@ def register_tools(mcp, config: ZabbixConfig):
         groupids: Annotated[list[str] | None, Field(default=None)] = None,
         hostids: Annotated[list[str] | None, Field(default=None)] = None,
         output: Annotated[str | list[str], Field(default="extend")] = "extend",
+        limit: Annotated[
+            int,
+            Field(
+                default=100,
+                description="Maximum number of results to return. Default is 100.",
+                ge=1,
+            ),
+        ] = 100,
+        offset: Annotated[
+            int,
+            Field(
+                default=0,
+                description="Number of results to skip (for pagination). Requires sortfield to be set.",
+                ge=0,
+            ),
+        ] = 0,
         sortfield: Annotated[
             str | None,
             Field(default=None, description="Field to sort by."),
@@ -3053,9 +3319,12 @@ def register_tools(mcp, config: ZabbixConfig):
             maintenanceids: List of maintenance IDs to get. If empty, returns all maintenance periods.
             groupids: List of host group IDs to get maintenance for.
             hostids: List of host IDs to get maintenance for.
+            limit: Maximum number of results to return (default 100). Set higher for more results.
+            offset: Number of results to skip for pagination. Use with sortfield.
 
         Returns:
-            dict: Contains 'maintenance' list with maintenance objects and 'count' of returned records.
+            dict: Contains 'maintenance' list with maintenance objects, 'count' of returned records,
+                  and pagination metadata ('limit', 'offset').
                   Each maintenance includes:
                   - maintenanceid: Unique maintenance ID
                   - name: Maintenance window name
@@ -3094,9 +3363,18 @@ def register_tools(mcp, config: ZabbixConfig):
             if hostids:
                 params["hostids"] = hostids
 
+            params["limit"] = limit
+            if offset > 0:
+                params["offset"] = offset
+
             async with ZabbixClient(config) as api:
                 result = await api.maintenance.get(**params)
-                return {"maintenance": result, "count": len(result)}
+                return {
+                    "maintenance": result,
+                    "count": len(result),
+                    "limit": limit,
+                    "offset": offset,
+                }
         except Exception as e:
             await ctx.error(f"Error retrieving maintenance: {e!s}")
             return {"error": str(e)}
@@ -3371,6 +3649,22 @@ def register_tools(mcp, config: ZabbixConfig):
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str | list[str], Field(default="extend")] = "extend",
+        limit: Annotated[
+            int,
+            Field(
+                default=100,
+                description="Maximum number of results to return. Default is 100.",
+                ge=1,
+            ),
+        ] = 100,
+        offset: Annotated[
+            int,
+            Field(
+                default=0,
+                description="Number of results to skip (for pagination). Requires sortfield to be set.",
+                ge=0,
+            ),
+        ] = 0,
         sortfield: Annotated[
             str | None,
             Field(default=None, description="Field to sort by."),
@@ -3399,9 +3693,12 @@ def register_tools(mcp, config: ZabbixConfig):
             hostids: List of host IDs to get actions for.
             search: Dictionary with search criteria like {'name': 'notify'}.
             filter_params: Additional filter parameters for advanced filtering.
+            limit: Maximum number of results to return (default 100). Set higher for more results.
+            offset: Number of results to skip for pagination. Use with sortfield.
 
         Returns:
-            dict: Contains 'actions' list with action objects and 'count' of returned actions.
+            dict: Contains 'actions' list with action objects, 'count' of returned actions,
+                  and pagination metadata ('limit', 'offset').
                   Each action includes:
                   - actionid: Unique action ID
                   - name: Action name/description
@@ -3439,9 +3736,18 @@ def register_tools(mcp, config: ZabbixConfig):
             if filter_params:
                 params["filter"] = filter_params
 
+            params["limit"] = limit
+            if offset > 0:
+                params["offset"] = offset
+
             async with ZabbixClient(config) as api:
                 result = await api.action.get(**params)
-                return {"actions": result, "count": len(result)}
+                return {
+                    "actions": result,
+                    "count": len(result),
+                    "limit": limit,
+                    "offset": offset,
+                }
         except Exception as e:
             await ctx.error(f"Error retrieving actions: {e!s}")
             return {"error": str(e)}
@@ -3464,6 +3770,22 @@ def register_tools(mcp, config: ZabbixConfig):
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str | list[str], Field(default="extend")] = "extend",
+        limit: Annotated[
+            int,
+            Field(
+                default=100,
+                description="Maximum number of results to return. Default is 100.",
+                ge=1,
+            ),
+        ] = 100,
+        offset: Annotated[
+            int,
+            Field(
+                default=0,
+                description="Number of results to skip (for pagination). Requires sortfield to be set.",
+                ge=0,
+            ),
+        ] = 0,
         sortfield: Annotated[
             str | None,
             Field(default=None, description="Field to sort by."),
@@ -3490,9 +3812,12 @@ def register_tools(mcp, config: ZabbixConfig):
             mediatypeids: List of media type IDs to get. If empty, returns all media types.
             search: Dictionary with search criteria like {'description': 'email'}.
             filter_params: Additional filter parameters for advanced filtering.
+            limit: Maximum number of results to return (default 100). Set higher for more results.
+            offset: Number of results to skip for pagination. Use with sortfield.
 
         Returns:
-            dict: Contains 'mediatypes' list with media type objects and 'count' of returned types.
+            dict: Contains 'mediatypes' list with media type objects, 'count' of returned types,
+                  and pagination metadata ('limit', 'offset').
                   Each media type includes:
                   - mediatypeid: Unique media type ID
                   - type: Type code (0=email, 1=Exec script, 2=SMS, 3=Webhook, etc.)
@@ -3525,9 +3850,18 @@ def register_tools(mcp, config: ZabbixConfig):
             if filter_params:
                 params["filter"] = filter_params
 
+            params["limit"] = limit
+            if offset > 0:
+                params["offset"] = offset
+
             async with ZabbixClient(config) as api:
                 result = await api.mediatype.get(**params)
-                return {"mediatypes": result, "count": len(result)}
+                return {
+                    "mediatypes": result,
+                    "count": len(result),
+                    "limit": limit,
+                    "offset": offset,
+                }
         except Exception as e:
             await ctx.error(f"Error retrieving media types: {e!s}")
             return {"error": str(e)}
@@ -3552,7 +3886,22 @@ def register_tools(mcp, config: ZabbixConfig):
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str | list[str], Field(default="extend")] = "extend",
-        limit: Annotated[int | None, Field(default=None, ge=1)] = None,
+        limit: Annotated[
+            int,
+            Field(
+                default=100,
+                description="Maximum number of results to return. Default is 100.",
+                ge=1,
+            ),
+        ] = 100,
+        offset: Annotated[
+            int,
+            Field(
+                default=0,
+                description="Number of results to skip (for pagination). Requires sortfield to be set.",
+                ge=0,
+            ),
+        ] = 0,
         select_items: Annotated[
             bool,
             Field(
@@ -3602,13 +3951,15 @@ def register_tools(mcp, config: ZabbixConfig):
             templateids: List of template IDs to get graphs from.
             search: Dictionary with search criteria like {'name': 'CPU'}.
             filter_params: Additional filter parameters for advanced filtering.
-            limit: Maximum number of graphs to return (default unlimited).
+            limit: Maximum number of results to return (default 100). Set higher for more results.
+            offset: Number of results to skip for pagination. Use with sortfield.
             select_items: If true, each graph includes a 'gitems' list with graph items.
             select_hosts: If true, each graph includes a 'hosts' list.
             select_templates: If true, each graph includes a 'templates' list.
 
         Returns:
-            dict: Contains 'graphs' list with graph objects and 'count' of returned graphs.
+            dict: Contains 'graphs' list with graph objects, 'count' of returned graphs,
+                  and pagination metadata ('limit', 'offset').
                   Each graph includes:
                   - graphid: Unique graph ID
                   - name: Graph name
@@ -3644,8 +3995,9 @@ def register_tools(mcp, config: ZabbixConfig):
                 params["search"] = search
             if filter_params:
                 params["filter"] = filter_params
-            if limit:
-                params["limit"] = limit
+            params["limit"] = limit
+            if offset > 0:
+                params["offset"] = offset
             if select_items:
                 params["selectGraphItems"] = "extend"
             if select_hosts:
@@ -3655,7 +4007,12 @@ def register_tools(mcp, config: ZabbixConfig):
 
             async with ZabbixClient(config) as api:
                 result = await api.graph.get(**params)
-                return {"graphs": result, "count": len(result)}
+                return {
+                    "graphs": result,
+                    "count": len(result),
+                    "limit": limit,
+                    "offset": offset,
+                }
         except Exception as e:
             await ctx.error(f"Error retrieving graphs: {e!s}")
             return {"error": str(e)}
@@ -3680,6 +4037,22 @@ def register_tools(mcp, config: ZabbixConfig):
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str | list[str], Field(default="extend")] = "extend",
+        limit: Annotated[
+            int,
+            Field(
+                default=100,
+                description="Maximum number of results to return. Default is 100.",
+                ge=1,
+            ),
+        ] = 100,
+        offset: Annotated[
+            int,
+            Field(
+                default=0,
+                description="Number of results to skip (for pagination). Requires sortfield to be set.",
+                ge=0,
+            ),
+        ] = 0,
         sortfield: Annotated[
             str | None,
             Field(default=None, description="Field to sort by."),
@@ -3708,9 +4081,12 @@ def register_tools(mcp, config: ZabbixConfig):
             templateids: List of template IDs to get discovery rules from.
             search: Dictionary with search criteria like {'name': 'SNMP'}.
             filter_params: Additional filter parameters for advanced filtering.
+            limit: Maximum number of results to return (default 100). Set higher for more results.
+            offset: Number of results to skip for pagination. Use with sortfield.
 
         Returns:
-            dict: Contains 'discoveryrules' list with discovery rule objects and 'count'.
+            dict: Contains 'discoveryrules' list with discovery rule objects, 'count',
+                  and pagination metadata ('limit', 'offset').
                   Each rule includes:
                   - itemid: Discovery rule item ID
                   - name: Discovery rule name
@@ -3748,9 +4124,18 @@ def register_tools(mcp, config: ZabbixConfig):
             if filter_params:
                 params["filter"] = filter_params
 
+            params["limit"] = limit
+            if offset > 0:
+                params["offset"] = offset
+
             async with ZabbixClient(config) as api:
                 result = await api.discoveryrule.get(**params)
-                return {"discoveryrules": result, "count": len(result)}
+                return {
+                    "discoveryrules": result,
+                    "count": len(result),
+                    "limit": limit,
+                    "offset": offset,
+                }
         except Exception as e:
             await ctx.error(f"Error retrieving discovery rules: {e!s}")
             return {"error": str(e)}
@@ -3771,6 +4156,22 @@ def register_tools(mcp, config: ZabbixConfig):
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str | list[str], Field(default="extend")] = "extend",
+        limit: Annotated[
+            int,
+            Field(
+                default=100,
+                description="Maximum number of results to return. Default is 100.",
+                ge=1,
+            ),
+        ] = 100,
+        offset: Annotated[
+            int,
+            Field(
+                default=0,
+                description="Number of results to skip (for pagination). Requires sortfield to be set.",
+                ge=0,
+            ),
+        ] = 0,
         sortfield: Annotated[
             str | None,
             Field(default=None, description="Field to sort by."),
@@ -3799,9 +4200,12 @@ def register_tools(mcp, config: ZabbixConfig):
             discoveryids: List of discovery rule IDs to get prototypes from.
             search: Dictionary with search criteria like {'name': 'CPU'}.
             filter_params: Additional filter parameters for advanced filtering.
+            limit: Maximum number of results to return (default 100). Set higher for more results.
+            offset: Number of results to skip for pagination. Use with sortfield.
 
         Returns:
-            dict: Contains 'itemprototypes' list with item prototype objects and 'count'.
+            dict: Contains 'itemprototypes' list with item prototype objects, 'count',
+                  and pagination metadata ('limit', 'offset').
                   Each prototype includes:
                   - itemid: Item prototype ID
                   - name: Item prototype name
@@ -3839,9 +4243,18 @@ def register_tools(mcp, config: ZabbixConfig):
             if filter_params:
                 params["filter"] = filter_params
 
+            params["limit"] = limit
+            if offset > 0:
+                params["offset"] = offset
+
             async with ZabbixClient(config) as api:
                 result = await api.itemprototype.get(**params)
-                return {"itemprototypes": result, "count": len(result)}
+                return {
+                    "itemprototypes": result,
+                    "count": len(result),
+                    "limit": limit,
+                    "offset": offset,
+                }
         except Exception as e:
             await ctx.error(f"Error retrieving item prototypes: {e!s}")
             return {"error": str(e)}
@@ -3860,6 +4273,22 @@ def register_tools(mcp, config: ZabbixConfig):
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str | list[str], Field(default="extend")] = "extend",
+        limit: Annotated[
+            int,
+            Field(
+                default=100,
+                description="Maximum number of results to return. Default is 100.",
+                ge=1,
+            ),
+        ] = 100,
+        offset: Annotated[
+            int,
+            Field(
+                default=0,
+                description="Number of results to skip (for pagination). Requires sortfield to be set.",
+                ge=0,
+            ),
+        ] = 0,
         sortfield: Annotated[
             str | None,
             Field(default=None, description="Field to sort by."),
@@ -3886,9 +4315,12 @@ def register_tools(mcp, config: ZabbixConfig):
             druleids: List of network discovery rule IDs to get. If empty, returns all rules.
             search: Dictionary with search criteria like {'name': 'LAN'}.
             filter_params: Additional filter parameters for advanced filtering.
+            limit: Maximum number of results to return (default 100). Set higher for more results.
+            offset: Number of results to skip for pagination. Use with sortfield.
 
         Returns:
-            dict: Contains 'drules' list with network discovery rule objects and 'count'.
+            dict: Contains 'drules' list with network discovery rule objects, 'count',
+                  and pagination metadata ('limit', 'offset').
                   Each rule includes:
                   - druleid: Discovery rule ID
                   - name: Rule name
@@ -3921,9 +4353,18 @@ def register_tools(mcp, config: ZabbixConfig):
             if filter_params:
                 params["filter"] = filter_params
 
+            params["limit"] = limit
+            if offset > 0:
+                params["offset"] = offset
+
             async with ZabbixClient(config) as api:
                 result = await api.drule.get(**params)
-                return {"drules": result, "count": len(result)}
+                return {
+                    "drules": result,
+                    "count": len(result),
+                    "limit": limit,
+                    "offset": offset,
+                }
         except Exception as e:
             await ctx.error(f"Error retrieving network discovery rules: {e!s}")
             return {"error": str(e)}
@@ -4097,6 +4538,22 @@ def register_tools(mcp, config: ZabbixConfig):
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str | list[str], Field(default="extend")] = "extend",
+        limit: Annotated[
+            int,
+            Field(
+                default=100,
+                description="Maximum number of results to return. Default is 100.",
+                ge=1,
+            ),
+        ] = 100,
+        offset: Annotated[
+            int,
+            Field(
+                default=0,
+                description="Number of results to skip (for pagination). Requires sortfield to be set.",
+                ge=0,
+            ),
+        ] = 0,
         sortfield: Annotated[
             str | None,
             Field(default=None, description="Field to sort by."),
@@ -4124,9 +4581,12 @@ def register_tools(mcp, config: ZabbixConfig):
             serviceids: List of service IDs to get SLAs for.
             search: Dictionary with search criteria like {'name': 'Website'}.
             filter_params: Additional filter parameters for advanced filtering.
+            limit: Maximum number of results to return (default 100). Set higher for more results.
+            offset: Number of results to skip for pagination. Use with sortfield.
 
         Returns:
-            dict: Contains 'slas' list with SLA objects and 'count' of returned SLAs.
+            dict: Contains 'slas' list with SLA objects, 'count' of returned SLAs,
+                  and pagination metadata ('limit', 'offset').
                   Each SLA includes:
                   - slaid: Unique SLA ID
                   - name: SLA name
@@ -4162,9 +4622,18 @@ def register_tools(mcp, config: ZabbixConfig):
             if filter_params:
                 params["filter"] = filter_params
 
+            params["limit"] = limit
+            if offset > 0:
+                params["offset"] = offset
+
             async with ZabbixClient(config) as api:
                 result = await api.sla.get(**params)
-                return {"slas": result, "count": len(result)}
+                return {
+                    "slas": result,
+                    "count": len(result),
+                    "limit": limit,
+                    "offset": offset,
+                }
         except Exception as e:
             await ctx.error(f"Error retrieving SLAs: {e!s}")
             return {"error": str(e)}
@@ -4184,6 +4653,22 @@ def register_tools(mcp, config: ZabbixConfig):
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str | list[str], Field(default="extend")] = "extend",
+        limit: Annotated[
+            int,
+            Field(
+                default=100,
+                description="Maximum number of results to return. Default is 100.",
+                ge=1,
+            ),
+        ] = 100,
+        offset: Annotated[
+            int,
+            Field(
+                default=0,
+                description="Number of results to skip (for pagination). Requires sortfield to be set.",
+                ge=0,
+            ),
+        ] = 0,
         sortfield: Annotated[
             str | None,
             Field(default=None, description="Field to sort by."),
@@ -4211,9 +4696,12 @@ def register_tools(mcp, config: ZabbixConfig):
             parentids: List of parent service IDs to get child services from.
             search: Dictionary with search criteria like {'name': 'API'}.
             filter_params: Additional filter parameters for advanced filtering.
+            limit: Maximum number of results to return (default 100). Set higher for more results.
+            offset: Number of results to skip for pagination. Use with sortfield.
 
         Returns:
-            dict: Contains 'services' list with service objects and 'count' of returned services.
+            dict: Contains 'services' list with service objects, 'count' of returned services,
+                  and pagination metadata ('limit', 'offset').
                   Each service includes:
                   - serviceid: Unique service ID
                   - name: Service name
@@ -4248,9 +4736,18 @@ def register_tools(mcp, config: ZabbixConfig):
             if filter_params:
                 params["filter"] = filter_params
 
+            params["limit"] = limit
+            if offset > 0:
+                params["offset"] = offset
+
             async with ZabbixClient(config) as api:
                 result = await api.service.get(**params)
-                return {"services": result, "count": len(result)}
+                return {
+                    "services": result,
+                    "count": len(result),
+                    "limit": limit,
+                    "offset": offset,
+                }
         except Exception as e:
             await ctx.error(f"Error retrieving services: {e!s}")
             return {"error": str(e)}
@@ -4275,6 +4772,22 @@ def register_tools(mcp, config: ZabbixConfig):
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str | list[str], Field(default="extend")] = "extend",
+        limit: Annotated[
+            int,
+            Field(
+                default=100,
+                description="Maximum number of results to return. Default is 100.",
+                ge=1,
+            ),
+        ] = 100,
+        offset: Annotated[
+            int,
+            Field(
+                default=0,
+                description="Number of results to skip (for pagination). Requires sortfield to be set.",
+                ge=0,
+            ),
+        ] = 0,
         sortfield: Annotated[
             str | None,
             Field(default=None, description="Field to sort by."),
@@ -4303,9 +4816,12 @@ def register_tools(mcp, config: ZabbixConfig):
             groupids: List of group IDs to get scripts for hosts in those groups.
             search: Dictionary with search criteria like {'name': 'restart'}.
             filter_params: Additional filter parameters for advanced filtering.
+            limit: Maximum number of results to return (default 100). Set higher for more results.
+            offset: Number of results to skip for pagination. Use with sortfield.
 
         Returns:
-            dict: Contains 'scripts' list with script objects and 'count' of returned scripts.
+            dict: Contains 'scripts' list with script objects, 'count' of returned scripts,
+                  and pagination metadata ('limit', 'offset').
                   Each script includes:
                   - scriptid: Unique script ID
                   - name: Script name
@@ -4342,9 +4858,18 @@ def register_tools(mcp, config: ZabbixConfig):
             if filter_params:
                 params["filter"] = filter_params
 
+            params["limit"] = limit
+            if offset > 0:
+                params["offset"] = offset
+
             async with ZabbixClient(config) as api:
                 result = await api.script.get(**params)
-                return {"scripts": result, "count": len(result)}
+                return {
+                    "scripts": result,
+                    "count": len(result),
+                    "limit": limit,
+                    "offset": offset,
+                }
         except Exception as e:
             await ctx.error(f"Error retrieving scripts: {e!s}")
             return {"error": str(e)}
@@ -4433,6 +4958,22 @@ def register_tools(mcp, config: ZabbixConfig):
         search: Annotated[dict[str, str] | None, Field(default=None)] = None,
         filter_params: Annotated[dict[str, Any] | None, Field(default=None)] = None,
         output: Annotated[str | list[str], Field(default="extend")] = "extend",
+        limit: Annotated[
+            int,
+            Field(
+                default=100,
+                description="Maximum number of results to return. Default is 100.",
+                ge=1,
+            ),
+        ] = 100,
+        offset: Annotated[
+            int,
+            Field(
+                default=0,
+                description="Number of results to skip (for pagination). Requires sortfield to be set.",
+                ge=0,
+            ),
+        ] = 0,
         sortfield: Annotated[
             str | None,
             Field(default=None, description="Field to sort by."),
@@ -4463,9 +5004,12 @@ def register_tools(mcp, config: ZabbixConfig):
             globalmacro: If true, return global macros (available to all hosts).
             search: Dictionary with search criteria like {'macro': '{$THRESHOLD}'}.
             filter_params: Additional filter parameters for advanced filtering.
+            limit: Maximum number of results to return (default 100). Set higher for more results.
+            offset: Number of results to skip for pagination. Use with sortfield.
 
         Returns:
-            dict: Contains 'macros' list with macro objects and 'count' of returned macros.
+            dict: Contains 'macros' list with macro objects, 'count' of returned macros,
+                  and pagination metadata ('limit', 'offset').
                   Each macro includes:
                   - hostmacrois/globalmacrois: Macro ID
                   - macro: Macro name/identifier
@@ -4507,9 +5051,18 @@ def register_tools(mcp, config: ZabbixConfig):
             if filter_params:
                 params["filter"] = filter_params
 
+            params["limit"] = limit
+            if offset > 0:
+                params["offset"] = offset
+
             async with ZabbixClient(config) as api:
                 result = await api.usermacro.get(**params)
-                return {"macros": result, "count": len(result)}
+                return {
+                    "macros": result,
+                    "count": len(result),
+                    "limit": limit,
+                    "offset": offset,
+                }
         except Exception as e:
             await ctx.error(f"Error retrieving user macros: {e!s}")
             return {"error": str(e)}
