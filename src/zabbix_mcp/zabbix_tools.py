@@ -3158,6 +3158,266 @@ def register_tools(mcp, config: ZabbixConfig):
             await ctx.error(f"Error retrieving actions: {e!s}")
             return {"error": str(e)}
 
+    @mcp.tool(
+        tags={"zabbix", "action"},
+        annotations={
+            "readOnlyHint": False,
+            "destructiveHint": False,
+            "idempotentHint": False,
+        },
+    )
+    async def action_create(
+        ctx: Context,
+        name: Annotated[str, Field(description="Action name.")],
+        eventsource: Annotated[
+            str,
+            Field(
+                description="Event source: 0=trigger, 1=discovery, 2=autoregistration, 3=internal, 4=service."
+            ),
+        ],
+        operations: Annotated[
+            list[dict[str, Any]],
+            Field(description="List of operation objects (what to do when the action fires)."),
+        ],
+        filter_params: Annotated[
+            dict[str, Any] | None,
+            Field(
+                default=None,
+                description="Filter object with 'evaltype' and 'conditions' list. Omit for 'any condition matches'.",
+            ),
+        ] = None,
+        recovery_operations: Annotated[
+            list[dict[str, Any]] | None,
+            Field(default=None, description="List of operations to run when the problem resolves."),
+        ] = None,
+        update_operations: Annotated[
+            list[dict[str, Any]] | None,
+            Field(default=None, description="List of operations to run on problem update/acknowledgement."),
+        ] = None,
+        status: Annotated[
+            str, Field(default="0", description="0=enabled, 1=disabled.")
+        ] = "0",
+        esc_period: Annotated[
+            str, Field(default="1h", description="Default operation step duration.")
+        ] = "1h",
+        pause_suppressed: Annotated[
+            str | None,
+            Field(default=None, description="0=don't pause, 1=pause operations for suppressed problems."),
+        ] = None,
+        notify_if_canceled: Annotated[
+            str | None,
+            Field(default=None, description="0=don't notify, 1=notify about canceled escalations."),
+        ] = None,
+        pause_symptoms: Annotated[
+            str | None,
+            Field(default=None, description="0=don't pause, 1=pause operations for symptom problems."),
+        ] = None,
+    ) -> dict:
+        """
+        Create a new action in Zabbix.
+
+        Actions define automated responses to problems/triggers - sending notifications,
+        executing remote commands, or calling webhooks (e.g. to trigger external remediation
+        via Ansible/Semaphore). Conditions determine which events the action applies to;
+        operations determine what happens.
+
+        Args:
+            name: Action name displayed in the UI.
+            eventsource: 0=trigger (most common), 1=discovery, 2=autoregistration, 3=internal, 4=service.
+            operations: List of operation dicts, e.g.
+                [{"operationtype": "0", "esc_period": "0", "esc_step_from": "1", "esc_step_to": "1",
+                  "opmessage": {"default_msg": "0", "subject": "...", "message": "...",
+                                "mediatypeid": "35"},
+                  "opmessage_usr": [{"userid": "8"}]}]
+                operationtype 0 = send message.
+            filter_params: Filter dict with 'evaltype' (0=and/or, 1=and, 2=or, 3=custom expression)
+                and 'conditions' list, e.g.
+                [{"conditiontype": "3", "operator": "2", "value": "Bacula-fd"}]
+                conditiontype 13 = template match (value=templateid, operator 0=equals);
+                conditiontype 3 = trigger name (operator 2="like", value=substring) - use this
+                for LLD-discovered per-host triggers that aren't linked to a single template.
+                Do NOT include an empty "formula" key - Zabbix rejects it; only set it when
+                evaltype is 3 (custom expression).
+            recovery_operations: Operations to run when the problem resolves, e.g. to flip a
+                Slack message green via chat.update. Do NOT include "evaltype" in these entries.
+            update_operations: Operations to run on problem update/acknowledgement.
+            status: 0=enabled, 1=disabled. Default enabled.
+            esc_period: Default step duration, e.g. '1h'.
+            pause_suppressed: 1 to pause operations while the problem is suppressed (maintenance).
+            notify_if_canceled: 1 to notify if escalation is canceled.
+            pause_symptoms: 1 to pause operations for symptom (cause/symptom linked) problems.
+
+        Returns:
+            dict: Contains 'actionids' list with the newly created action ID and 'success' flag.
+                  On error, contains 'error' key with the error message.
+
+        Note: Use action_get on an existing similar action first to see the exact structure
+              Zabbix returns, then adapt it for the new action rather than guessing field names.
+        """
+        try:
+            await ctx.info(f"Creating action '{name}'...")
+            params: dict[str, Any] = {
+                "name": name,
+                "eventsource": eventsource,
+                "status": status,
+                "esc_period": esc_period,
+                "operations": operations,
+            }
+            if filter_params is not None:
+                params["filter"] = filter_params
+            if recovery_operations is not None:
+                params["recovery_operations"] = recovery_operations
+            if update_operations is not None:
+                params["update_operations"] = update_operations
+            if pause_suppressed is not None:
+                params["pause_suppressed"] = pause_suppressed
+            if notify_if_canceled is not None:
+                params["notify_if_canceled"] = notify_if_canceled
+            if pause_symptoms is not None:
+                params["pause_symptoms"] = pause_symptoms
+
+            async with ZabbixClient(config) as api:
+                result = await api.action.create(**params)
+                return {
+                    "actionids": result.get("actionids", []),
+                    "success": True,
+                }
+        except Exception as e:
+            await ctx.error(f"Error creating action: {e!s}")
+            return {"error": str(e)}
+
+    @mcp.tool(
+        tags={"zabbix", "action"},
+        annotations={
+            "readOnlyHint": False,
+            "destructiveHint": False,
+            "idempotentHint": False,
+        },
+    )
+    async def action_update(
+        ctx: Context,
+        actionid: Annotated[str, Field(description="ID of the action to update. Find it with action_get.")],
+        name: Annotated[str | None, Field(default=None)] = None,
+        status: Annotated[
+            str | None, Field(default=None, description="0=enabled, 1=disabled.")
+        ] = None,
+        esc_period: Annotated[str | None, Field(default=None)] = None,
+        filter_params: Annotated[
+            dict[str, Any] | None,
+            Field(default=None, description="Replaces the full filter object if given."),
+        ] = None,
+        operations: Annotated[
+            list[dict[str, Any]] | None,
+            Field(default=None, description="Replaces the full operations list if given."),
+        ] = None,
+        recovery_operations: Annotated[
+            list[dict[str, Any]] | None,
+            Field(default=None, description="Replaces the full recovery_operations list if given."),
+        ] = None,
+        update_operations: Annotated[
+            list[dict[str, Any]] | None,
+            Field(default=None, description="Replaces the full update_operations list if given."),
+        ] = None,
+        pause_suppressed: Annotated[str | None, Field(default=None)] = None,
+        notify_if_canceled: Annotated[str | None, Field(default=None)] = None,
+        pause_symptoms: Annotated[str | None, Field(default=None)] = None,
+    ) -> dict:
+        """
+        Update an existing action in Zabbix.
+
+        Only specify the fields you want to change. Note that filter/operations/recovery_operations/
+        update_operations are each replaced wholesale when provided (not merged) - fetch the current
+        action with action_get first if you need to preserve unrelated conditions or operations.
+
+        Args:
+            actionid: ID of the action to update (required). Find it with action_get.
+            name: New action name.
+            status: 0=enabled, 1=disabled.
+            esc_period: New default step duration, e.g. '1h'.
+            filter_params: New filter object, replaces the existing one entirely.
+            operations: New operations list, replaces the existing one entirely.
+            recovery_operations: New recovery_operations list, replaces the existing one entirely.
+            update_operations: New update_operations list, replaces the existing one entirely.
+            pause_suppressed: 1 to pause operations while suppressed, 0 otherwise.
+            notify_if_canceled: 1 to notify on canceled escalation, 0 otherwise.
+            pause_symptoms: 1 to pause operations for symptom problems, 0 otherwise.
+
+        Returns:
+            dict: Contains 'actionids' list with the updated action ID and 'success' flag.
+                  On error, contains 'error' key with the error message.
+        """
+        try:
+            await ctx.info(f"Updating action {actionid}...")
+            params: dict[str, Any] = {"actionid": actionid}
+            if name is not None:
+                params["name"] = name
+            if status is not None:
+                params["status"] = status
+            if esc_period is not None:
+                params["esc_period"] = esc_period
+            if filter_params is not None:
+                params["filter"] = filter_params
+            if operations is not None:
+                params["operations"] = operations
+            if recovery_operations is not None:
+                params["recovery_operations"] = recovery_operations
+            if update_operations is not None:
+                params["update_operations"] = update_operations
+            if pause_suppressed is not None:
+                params["pause_suppressed"] = pause_suppressed
+            if notify_if_canceled is not None:
+                params["notify_if_canceled"] = notify_if_canceled
+            if pause_symptoms is not None:
+                params["pause_symptoms"] = pause_symptoms
+
+            async with ZabbixClient(config) as api:
+                result = await api.action.update(**params)
+                return {
+                    "actionids": result.get("actionids", []),
+                    "success": True,
+                }
+        except Exception as e:
+            await ctx.error(f"Error updating action: {e!s}")
+            return {"error": str(e)}
+
+    @mcp.tool(
+        tags={"zabbix", "action"},
+        annotations={
+            "readOnlyHint": False,
+            "destructiveHint": True,
+            "idempotentHint": False,
+        },
+    )
+    async def action_delete(
+        ctx: Context,
+        actionids: Annotated[list[str], Field(description="Action IDs to delete.")],
+    ) -> dict:
+        """
+        Delete actions from Zabbix.
+
+        Permanently removes automated response rules. Future events matching the deleted
+        action's conditions will no longer trigger its operations (notifications, remote
+        commands, webhooks).
+
+        Args:
+            actionids: List of action IDs to delete. Find them with action_get.
+
+        Returns:
+            dict: Contains 'actionids' list with deleted action IDs and 'success' flag.
+                  On error, contains 'error' key with the error message.
+        """
+        try:
+            await ctx.info(f"Deleting actions: {actionids}...")
+            async with ZabbixClient(config) as api:
+                result = await api.action.delete(*actionids)
+                return {
+                    "actionids": result.get("actionids", []),
+                    "success": True,
+                }
+        except Exception as e:
+            await ctx.error(f"Error deleting action: {e!s}")
+            return {"error": str(e)}
+
     ##########################
     # Media Type Tools
     ##########################
