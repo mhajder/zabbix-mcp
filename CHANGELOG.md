@@ -1,3 +1,13 @@
+## v0.5.3 (2026-07-14)
+
+### Fix
+
+- **tools**: handle string values for severities in problem_get
+
+### Refactor
+
+- **tools**: split zabbix_tools.py into modular sub-modules
+
 ## v0.5.2 (2026-07-06)
 
 ### Refactor
