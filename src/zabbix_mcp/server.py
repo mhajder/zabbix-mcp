@@ -19,9 +19,9 @@ from fastmcp.server.transforms.search import BM25SearchTransform
 from fastmcp.server.transforms.search import RegexSearchTransform
 
 from zabbix_mcp.sentry_init import init_sentry
+from zabbix_mcp.tools import register_tools
 from zabbix_mcp.zabbix_client import get_transport_config_from_env
 from zabbix_mcp.zabbix_client import get_zabbix_config_from_env
-from zabbix_mcp.zabbix_tools import register_tools
 
 # Load environment variables
 load_dotenv()
