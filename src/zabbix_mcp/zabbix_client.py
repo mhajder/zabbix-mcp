@@ -20,7 +20,7 @@ class ZabbixClient:
     _api: AsyncZabbixAPI | None = None
     _task_apis: dict
 
-    def __new__(cls, config: ZabbixConfig | None = None):
+    def __new__(cls, config: ZabbixConfig | None = None):  # noqa: ARG004
         """Create a new instance of ZabbixClient (singleton)."""
         if cls._instance is None:
             cls._instance = super().__new__(cls)
