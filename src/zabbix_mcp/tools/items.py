@@ -364,7 +364,10 @@ def register_items_tools(mcp, config: ZabbixConfig):
     )
     async def item_delete(
         ctx: Context,
-        itemids: Annotated[list[str], Field(description="Item IDs to delete.")],
+        itemids: Annotated[
+            list[str],
+            Field(description="Item IDs to delete.", min_length=1),
+        ],
     ) -> dict:
         """
         Delete items from Zabbix.

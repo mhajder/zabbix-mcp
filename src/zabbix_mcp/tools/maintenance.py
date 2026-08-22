@@ -339,7 +339,8 @@ def register_maintenance_tools(mcp, config: ZabbixConfig):
     async def maintenance_delete(
         ctx: Context,
         maintenanceids: Annotated[
-            list[str], Field(description="Maintenance IDs to delete.")
+            list[str],
+            Field(description="Maintenance IDs to delete.", min_length=1),
         ],
     ) -> dict:
         """

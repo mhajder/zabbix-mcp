@@ -300,7 +300,10 @@ def register_templates_tools(mcp, config: ZabbixConfig):
     )
     async def template_delete(
         ctx: Context,
-        templateids: Annotated[list[str], Field(description="Template IDs to delete.")],
+        templateids: Annotated[
+            list[str],
+            Field(description="Template IDs to delete.", min_length=1),
+        ],
     ) -> dict:
         """
         Delete templates from Zabbix.

@@ -219,7 +219,8 @@ def register_macros_tools(mcp, config: ZabbixConfig):
     async def usermacro_delete(
         ctx: Context,
         hostmacroids: Annotated[
-            list[str], Field(description="Host macro IDs to delete.")
+            list[str],
+            Field(description="Host macro IDs to delete.", min_length=1),
         ],
     ) -> dict:
         """

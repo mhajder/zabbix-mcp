@@ -384,7 +384,10 @@ def register_problems_tools(mcp, config: ZabbixConfig):
     )
     async def event_acknowledge(
         ctx: Context,
-        eventids: Annotated[list[str], Field(description="Event IDs to acknowledge.")],
+        eventids: Annotated[
+            list[str],
+            Field(description="Event IDs to acknowledge.", min_length=1),
+        ],
         action: Annotated[
             int,
             Field(

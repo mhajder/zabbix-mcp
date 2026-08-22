@@ -237,7 +237,10 @@ def register_proxies_tools(mcp, config: ZabbixConfig):
     )
     async def proxy_delete(
         ctx: Context,
-        proxyids: Annotated[list[str], Field(description="Proxy IDs to delete.")],
+        proxyids: Annotated[
+            list[str],
+            Field(description="Proxy IDs to delete.", min_length=1),
+        ],
     ) -> dict:
         """
         Delete proxies from Zabbix.

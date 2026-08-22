@@ -407,7 +407,10 @@ def register_hosts_tools(mcp, config: ZabbixConfig):
     )
     async def host_delete(
         ctx: Context,
-        hostids: Annotated[list[str], Field(description="List of host IDs to delete.")],
+        hostids: Annotated[
+            list[str],
+            Field(description="List of host IDs to delete.", min_length=1),
+        ],
     ) -> dict:
         """
         Delete hosts from Zabbix.
@@ -661,7 +664,10 @@ def register_hosts_tools(mcp, config: ZabbixConfig):
     )
     async def hostgroup_delete(
         ctx: Context,
-        groupids: Annotated[list[str], Field(description="Group IDs to delete.")],
+        groupids: Annotated[
+            list[str],
+            Field(description="Group IDs to delete.", min_length=1),
+        ],
     ) -> dict:
         """
         Delete host groups from Zabbix.

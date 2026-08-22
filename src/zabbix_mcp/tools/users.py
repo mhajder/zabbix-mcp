@@ -262,7 +262,10 @@ def register_users_tools(mcp, config: ZabbixConfig):
     )
     async def user_delete(
         ctx: Context,
-        userids: Annotated[list[str], Field(description="User IDs to delete.")],
+        userids: Annotated[
+            list[str],
+            Field(description="User IDs to delete.", min_length=1),
+        ],
     ) -> dict:
         """
         Delete users from Zabbix.

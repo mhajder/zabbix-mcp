@@ -58,7 +58,8 @@ def register_history_tools(mcp, config: ZabbixConfig):
     async def history_get(
         ctx: Context,
         itemids: Annotated[
-            list[str], Field(description="Item IDs to get history for.")
+            list[str],
+            Field(description="Item IDs to get history for.", min_length=1),
         ],
         history: Annotated[
             int | None,
@@ -163,7 +164,10 @@ def register_history_tools(mcp, config: ZabbixConfig):
     )
     async def trend_get(
         ctx: Context,
-        itemids: Annotated[list[str], Field(description="Item IDs to get trends for.")],
+        itemids: Annotated[
+            list[str],
+            Field(description="Item IDs to get trends for.", min_length=1),
+        ],
         time_from: Annotated[int | None, Field(default=None)] = None,
         time_till: Annotated[int | None, Field(default=None)] = None,
         limit: Annotated[

@@ -305,7 +305,10 @@ def register_triggers_tools(mcp, config: ZabbixConfig):
     )
     async def trigger_delete(
         ctx: Context,
-        triggerids: Annotated[list[str], Field(description="Trigger IDs to delete.")],
+        triggerids: Annotated[
+            list[str],
+            Field(description="Trigger IDs to delete.", min_length=1),
+        ],
     ) -> dict:
         """
         Delete triggers from Zabbix.
