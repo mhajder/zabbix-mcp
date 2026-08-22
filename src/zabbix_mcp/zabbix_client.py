@@ -3,13 +3,20 @@ import logging
 import os
 from typing import Any
 
+import aiohttp
 from zabbix_utils import AsyncZabbixAPI
+from zabbix_utils.common import ModuleUtils
+from zabbix_utils.types import APIVersion
 
 from zabbix_mcp.models import TransportConfig
 from zabbix_mcp.models import ZabbixConfig
 from zabbix_mcp.utils import parse_bool
 
 logger = logging.getLogger(__name__)
+
+# Name-mangled cache slot for AsyncZabbixAPI.__version. Populating it keeps the
+# library's constructor from resolving the version itself - see _seed_api_version.
+_VERSION_CACHE_ATTR = "_AsyncZabbixAPI__version"
 
 
 class ZabbixClient:
@@ -56,6 +63,45 @@ class ZabbixClient:
                 logger.debug("Ignoring exception while closing Zabbix API session")
         return False
 
+    async def _seed_api_version(self) -> None:
+        """Resolve the Zabbix API version once, without blocking the event loop.
+
+        ``AsyncZabbixAPI.__init__`` resolves the version through a *synchronous*
+        ``urllib.urlopen`` call, and since a fresh instance is built per request
+        that stalls the whole loop on every tool call. That call also ignores the
+        configured timeout (``urlopen`` does not read ``Request.timeout``), so an
+        unresponsive server hangs every session indefinitely.
+
+        Caching the value on the class means the constructor finds it already
+        resolved and issues no request at all. If the library stops keeping the
+        cache there, this quietly does nothing and the old behaviour returns.
+        """
+        if not hasattr(AsyncZabbixAPI, _VERSION_CACHE_ATTR):
+            logger.debug("zabbix_utils no longer caches the API version; skipping seed")
+            return
+        if getattr(AsyncZabbixAPI, _VERSION_CACHE_ATTR) is not None:
+            return
+
+        url = ModuleUtils.check_url(self.config.zabbix_url)
+        payload = {"jsonrpc": "2.0", "method": "apiinfo.version", "params": {}, "id": 1}
+        connector = aiohttp.TCPConnector(ssl=self.config.verify_ssl)
+        async with aiohttp.ClientSession(
+            connector=connector,
+            timeout=aiohttp.ClientTimeout(total=self.config.timeout),
+        ) as session:
+            # apiinfo.version is rejected if an Authorization header is present.
+            response = await session.post(
+                url, json=payload, headers={"Content-Type": "application/json-rpc"}
+            )
+            response.raise_for_status()
+            body = await response.json()
+
+        if "error" in body:
+            raise RuntimeError(f"Could not read Zabbix API version: {body['error']}")
+
+        setattr(AsyncZabbixAPI, _VERSION_CACHE_ATTR, APIVersion(body["result"]))
+        logger.info("Connected to Zabbix API version %s", body["result"])
+
     async def _create_fresh_api(self) -> Any:
         """Create and return a new, authenticated AsyncZabbixAPI instance.
 
@@ -63,8 +109,9 @@ class ZabbixClient:
             AsyncZabbixAPI: Authenticated API instance ready for requests.
         """
         logger.debug(
-            f"Creating fresh Zabbix API connection to {self.config.zabbix_url}"
+            "Creating fresh Zabbix API connection to %s", self.config.zabbix_url
         )
+        await self._seed_api_version()
         api: Any = AsyncZabbixAPI(
             url=self.config.zabbix_url,
             token=self.config.token,
@@ -75,7 +122,6 @@ class ZabbixClient:
             skip_version_check=self.config.skip_version_check,
         )
         await api.login()
-        logger.debug(f"Connected to Zabbix API version {api.version}")
         return api
 
     async def get_api(self) -> Any:

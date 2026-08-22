@@ -31,7 +31,9 @@ def describe(exc: Exception) -> str:
     """
     code = getattr(exc, "code", None)
     if code is None:
-        return f"{type(exc).__name__}: {exc}"
+        # Some exceptions carry no message at all (asyncio.TimeoutError), so the
+        # type name has to stand on its own.
+        return f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__
 
     detail = " ".join(
         part for part in (getattr(exc, "message", ""), getattr(exc, "data", "")) if part
