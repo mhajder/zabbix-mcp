@@ -9,6 +9,7 @@ from fastmcp import Context
 from pydantic import Field
 
 from zabbix_mcp.models import ZabbixConfig
+from zabbix_mcp.tools.errors import fail
 from zabbix_mcp.tools.pagination import fetch_page
 from zabbix_mcp.tools.pagination import fetch_total
 from zabbix_mcp.zabbix_client import ZabbixClient
@@ -177,8 +178,7 @@ def register_triggers_tools(mcp, config: ZabbixConfig):
                     "has_more": offset + len(rows) < total,
                 }
         except Exception as e:
-            await ctx.error(f"Error retrieving triggers: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error retrieving triggers", e)
 
     @mcp.tool(
         tags={"zabbix", "trigger"},
@@ -236,8 +236,7 @@ def register_triggers_tools(mcp, config: ZabbixConfig):
                 result = await api.trigger.create(**params)
                 return {"triggerids": result.get("triggerids", []), "success": True}
         except Exception as e:
-            await ctx.error(f"Error creating trigger: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error creating trigger", e)
 
     @mcp.tool(
         tags={"zabbix", "trigger"},
@@ -275,7 +274,6 @@ def register_triggers_tools(mcp, config: ZabbixConfig):
 
         Returns:
             dict: Contains 'triggerids' list with updated trigger IDs and 'success' flag.
-                  On error, contains 'error' key with the error message.
         """
         try:
             await ctx.info(f"Updating trigger {triggerid}...")
@@ -295,8 +293,7 @@ def register_triggers_tools(mcp, config: ZabbixConfig):
                 result = await api.trigger.update(**params)
                 return {"triggerids": result.get("triggerids", []), "success": True}
         except Exception as e:
-            await ctx.error(f"Error updating trigger: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error updating trigger", e)
 
     @mcp.tool(
         tags={"zabbix", "trigger"},
@@ -321,7 +318,6 @@ def register_triggers_tools(mcp, config: ZabbixConfig):
 
         Returns:
             dict: Contains 'triggerids' list with deleted trigger IDs and 'success' flag.
-                  On error, contains 'error' key with the error message.
 
         Warning: Deleting a trigger stops all alerts and problem detection for that condition.
                  Consider disabling instead (set status=1) if you might need to re-enable it later.
@@ -332,8 +328,7 @@ def register_triggers_tools(mcp, config: ZabbixConfig):
                 result = await api.trigger.delete(*triggerids)
                 return {"triggerids": result.get("triggerids", []), "success": True}
         except Exception as e:
-            await ctx.error(f"Error deleting triggers: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error deleting triggers", e)
 
     ##########################
     # Problem Tools

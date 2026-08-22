@@ -9,6 +9,7 @@ from fastmcp import Context
 from pydantic import Field
 
 from zabbix_mcp.models import ZabbixConfig
+from zabbix_mcp.tools.errors import fail
 from zabbix_mcp.tools.pagination import fetch_page
 from zabbix_mcp.tools.pagination import fetch_total
 from zabbix_mcp.zabbix_client import ZabbixClient
@@ -135,8 +136,7 @@ def register_discovery_tools(mcp, config: ZabbixConfig):
                     "has_more": offset + len(rows) < total,
                 }
         except Exception as e:
-            await ctx.error(f"Error retrieving discovery rules: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error retrieving discovery rules", e)
 
     @mcp.tool(
         tags={"zabbix", "drule", "read-only"},
@@ -247,5 +247,4 @@ def register_discovery_tools(mcp, config: ZabbixConfig):
                     "has_more": offset + len(rows) < total,
                 }
         except Exception as e:
-            await ctx.error(f"Error retrieving network discovery rules: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error retrieving network discovery rules", e)

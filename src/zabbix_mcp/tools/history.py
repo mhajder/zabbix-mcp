@@ -9,6 +9,7 @@ from fastmcp import Context
 from pydantic import Field
 
 from zabbix_mcp.models import ZabbixConfig
+from zabbix_mcp.tools.errors import fail
 from zabbix_mcp.tools.pagination import fetch_total
 from zabbix_mcp.zabbix_client import ZabbixClient
 
@@ -114,8 +115,7 @@ def register_history_tools(mcp, config: ZabbixConfig):
                     "limit": limit,
                 }
         except Exception as e:
-            await ctx.error(f"Error retrieving history: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error retrieving history", e)
 
     @mcp.tool(
         tags={"zabbix", "trend", "read-only"},
@@ -194,8 +194,7 @@ def register_history_tools(mcp, config: ZabbixConfig):
                     "limit": limit,
                 }
         except Exception as e:
-            await ctx.error(f"Error retrieving trends: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error retrieving trends", e)
 
     ##########################
     # User Tools

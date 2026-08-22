@@ -9,6 +9,7 @@ from fastmcp import Context
 from pydantic import Field
 
 from zabbix_mcp.models import ZabbixConfig
+from zabbix_mcp.tools.errors import fail
 from zabbix_mcp.tools.pagination import fetch_page
 from zabbix_mcp.tools.pagination import fetch_total
 from zabbix_mcp.zabbix_client import ZabbixClient
@@ -128,8 +129,7 @@ def register_users_tools(mcp, config: ZabbixConfig):
                     "has_more": offset + len(rows) < total,
                 }
         except Exception as e:
-            await ctx.error(f"Error retrieving users: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error retrieving users", e)
 
     @mcp.tool(
         tags={"zabbix", "user"},
@@ -185,8 +185,7 @@ def register_users_tools(mcp, config: ZabbixConfig):
                 result = await api.user.create(**params)
                 return {"userids": result.get("userids", []), "success": True}
         except Exception as e:
-            await ctx.error(f"Error creating user: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error creating user", e)
 
     @mcp.tool(
         tags={"zabbix", "user"},
@@ -227,7 +226,6 @@ def register_users_tools(mcp, config: ZabbixConfig):
 
         Returns:
             dict: Contains 'userids' list with updated user IDs and 'success' flag.
-                  On error, contains 'error' key with the error message.
         """
         try:
             await ctx.info(f"Updating user {userid}...")
@@ -247,8 +245,7 @@ def register_users_tools(mcp, config: ZabbixConfig):
                 result = await api.user.update(**params)
                 return {"userids": result.get("userids", []), "success": True}
         except Exception as e:
-            await ctx.error(f"Error updating user: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error updating user", e)
 
     @mcp.tool(
         tags={"zabbix", "user"},
@@ -273,7 +270,6 @@ def register_users_tools(mcp, config: ZabbixConfig):
 
         Returns:
             dict: Contains 'userids' list with deleted user IDs and 'success' flag.
-                  On error, contains 'error' key with the error message.
 
         Warning: This action is permanent and immediate. Deleted users lose all access to Zabbix.
                  Consider disabling the user instead (modify type) if temporary removal is needed.
@@ -284,8 +280,7 @@ def register_users_tools(mcp, config: ZabbixConfig):
                 result = await api.user.delete(*userids)
                 return {"userids": result.get("userids", []), "success": True}
         except Exception as e:
-            await ctx.error(f"Error deleting users: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error deleting users", e)
 
     ##########################
     # Proxy Tools

@@ -9,6 +9,7 @@ from fastmcp import Context
 from pydantic import Field
 
 from zabbix_mcp.models import ZabbixConfig
+from zabbix_mcp.tools.errors import fail
 from zabbix_mcp.tools.pagination import fetch_page
 from zabbix_mcp.tools.pagination import fetch_total
 from zabbix_mcp.zabbix_client import ZabbixClient
@@ -127,8 +128,7 @@ def register_maintenance_tools(mcp, config: ZabbixConfig):
                     "has_more": offset + len(rows) < total,
                 }
         except Exception as e:
-            await ctx.error(f"Error retrieving maintenance: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error retrieving maintenance", e)
 
     @mcp.tool(
         tags={"zabbix", "maintenance"},
@@ -215,8 +215,7 @@ def register_maintenance_tools(mcp, config: ZabbixConfig):
                     "success": True,
                 }
         except Exception as e:
-            await ctx.error(f"Error creating maintenance: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error creating maintenance", e)
 
     @mcp.tool(
         tags={"zabbix", "maintenance"},
@@ -251,7 +250,6 @@ def register_maintenance_tools(mcp, config: ZabbixConfig):
 
         Returns:
             dict: Contains 'maintenanceids' list with updated maintenance IDs and 'success' flag.
-                  On error, contains 'error' key with the error message.
         """
         try:
             await ctx.info(f"Updating maintenance {maintenanceid}...")
@@ -272,8 +270,7 @@ def register_maintenance_tools(mcp, config: ZabbixConfig):
                     "success": True,
                 }
         except Exception as e:
-            await ctx.error(f"Error updating maintenance: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error updating maintenance", e)
 
     @mcp.tool(
         tags={"zabbix", "maintenance"},
@@ -300,7 +297,6 @@ def register_maintenance_tools(mcp, config: ZabbixConfig):
 
         Returns:
             dict: Contains 'maintenanceids' list with deleted maintenance IDs and 'success' flag.
-                  On error, contains 'error' key with the error message.
 
         Note: Alerts will resume immediately upon deletion. If maintenance period has passed,
               no impact on historical data. Consider timing of deletion to avoid alert storms.
@@ -314,8 +310,7 @@ def register_maintenance_tools(mcp, config: ZabbixConfig):
                     "success": True,
                 }
         except Exception as e:
-            await ctx.error(f"Error deleting maintenance: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error deleting maintenance", e)
 
     ##########################
     # Action Tools

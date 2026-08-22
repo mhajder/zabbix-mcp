@@ -9,6 +9,7 @@ from fastmcp import Context
 from pydantic import Field
 
 from zabbix_mcp.models import ZabbixConfig
+from zabbix_mcp.tools.errors import fail
 from zabbix_mcp.tools.pagination import fetch_page
 from zabbix_mcp.tools.pagination import fetch_total
 from zabbix_mcp.zabbix_client import ZabbixClient
@@ -127,8 +128,7 @@ def register_proxies_tools(mcp, config: ZabbixConfig):
                     "has_more": offset + len(rows) < total,
                 }
         except Exception as e:
-            await ctx.error(f"Error retrieving proxies: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error retrieving proxies", e)
 
     @mcp.tool(
         tags={"zabbix", "proxy"},
@@ -175,8 +175,7 @@ def register_proxies_tools(mcp, config: ZabbixConfig):
                 result = await api.proxy.create(**params)
                 return {"proxyids": result.get("proxyids", []), "success": True}
         except Exception as e:
-            await ctx.error(f"Error creating proxy: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error creating proxy", e)
 
     @mcp.tool(
         tags={"zabbix", "proxy"},
@@ -209,7 +208,6 @@ def register_proxies_tools(mcp, config: ZabbixConfig):
 
         Returns:
             dict: Contains 'proxyids' list with updated proxy IDs and 'success' flag.
-                  On error, contains 'error' key with the error message.
         """
         try:
             await ctx.info(f"Updating proxy {proxyid}...")
@@ -225,8 +223,7 @@ def register_proxies_tools(mcp, config: ZabbixConfig):
                 result = await api.proxy.update(**params)
                 return {"proxyids": result.get("proxyids", []), "success": True}
         except Exception as e:
-            await ctx.error(f"Error updating proxy: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error updating proxy", e)
 
     @mcp.tool(
         tags={"zabbix", "proxy"},
@@ -251,7 +248,6 @@ def register_proxies_tools(mcp, config: ZabbixConfig):
 
         Returns:
             dict: Contains 'proxyids' list with deleted proxy IDs and 'success' flag.
-                  On error, contains 'error' key with the error message.
 
         Warning: Hosts using this proxy will lose monitoring until reassigned. Plan reassignment
                  before deleting. Consider if data history should be preserved.
@@ -262,8 +258,7 @@ def register_proxies_tools(mcp, config: ZabbixConfig):
                 result = await api.proxy.delete(*proxyids)
                 return {"proxyids": result.get("proxyids", []), "success": True}
         except Exception as e:
-            await ctx.error(f"Error deleting proxies: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error deleting proxies", e)
 
     ##########################
     # Proxy Tools

@@ -9,6 +9,7 @@ from fastmcp import Context
 from pydantic import Field
 
 from zabbix_mcp.models import ZabbixConfig
+from zabbix_mcp.tools.errors import fail
 from zabbix_mcp.tools.pagination import fetch_page
 from zabbix_mcp.tools.pagination import fetch_total
 from zabbix_mcp.zabbix_client import ZabbixClient
@@ -190,8 +191,7 @@ def register_templates_tools(mcp, config: ZabbixConfig):
                     "has_more": offset + len(rows) < total,
                 }
         except Exception as e:
-            await ctx.error(f"Error retrieving templates: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error retrieving templates", e)
 
     @mcp.tool(
         tags={"zabbix", "template"},
@@ -240,8 +240,7 @@ def register_templates_tools(mcp, config: ZabbixConfig):
                 result = await api.template.create(**params)
                 return {"templateids": result.get("templateids", []), "success": True}
         except Exception as e:
-            await ctx.error(f"Error creating template: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error creating template", e)
 
     @mcp.tool(
         tags={"zabbix", "template"},
@@ -270,7 +269,6 @@ def register_templates_tools(mcp, config: ZabbixConfig):
 
         Returns:
             dict: Contains 'templateids' list with updated template IDs and 'success' flag.
-                  On error, contains 'error' key with the error message.
         """
         try:
             await ctx.info(f"Updating template {templateid}...")
@@ -284,8 +282,7 @@ def register_templates_tools(mcp, config: ZabbixConfig):
                 result = await api.template.update(**params)
                 return {"templateids": result.get("templateids", []), "success": True}
         except Exception as e:
-            await ctx.error(f"Error updating template: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error updating template", e)
 
     @mcp.tool(
         tags={"zabbix", "template"},
@@ -310,7 +307,6 @@ def register_templates_tools(mcp, config: ZabbixConfig):
 
         Returns:
             dict: Contains 'templateids' list with deleted template IDs and 'success' flag.
-                  On error, contains 'error' key with the error message.
 
         Warning: Deleting a template removes all associated items, triggers, and graphs from
                  hosts using that template. Consider unlinked the template first if you want
@@ -322,8 +318,7 @@ def register_templates_tools(mcp, config: ZabbixConfig):
                 result = await api.template.delete(*templateids)
                 return {"templateids": result.get("templateids", []), "success": True}
         except Exception as e:
-            await ctx.error(f"Error deleting templates: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error deleting templates", e)
 
     ##########################
     # Item Tools

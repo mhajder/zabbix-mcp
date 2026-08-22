@@ -9,6 +9,7 @@ from fastmcp import Context
 from pydantic import Field
 
 from zabbix_mcp.models import ZabbixConfig
+from zabbix_mcp.tools.errors import fail
 from zabbix_mcp.tools.pagination import fetch_page
 from zabbix_mcp.tools.pagination import fetch_total
 from zabbix_mcp.zabbix_client import ZabbixClient
@@ -147,8 +148,7 @@ def register_macros_tools(mcp, config: ZabbixConfig):
                     "has_more": offset + len(rows) < total,
                 }
         except Exception as e:
-            await ctx.error(f"Error retrieving user macros: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error retrieving user macros", e)
 
     @mcp.tool(
         tags={"zabbix", "usermacro"},
@@ -206,8 +206,7 @@ def register_macros_tools(mcp, config: ZabbixConfig):
                 result = await api.usermacro.create(**params)
                 return {"hostmacroids": result.get("hostmacroids", []), "success": True}
         except Exception as e:
-            await ctx.error(f"Error creating macro: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error creating macro", e)
 
     @mcp.tool(
         tags={"zabbix", "usermacro"},
@@ -234,7 +233,6 @@ def register_macros_tools(mcp, config: ZabbixConfig):
 
         Returns:
             dict: Contains 'hostmacroids' list with deleted macro IDs and 'success' flag.
-                  On error, contains 'error' key with the error message.
 
         Warning: Deleting a macro may break items/triggers that reference it. Verify impact before deletion.
         """
@@ -244,5 +242,4 @@ def register_macros_tools(mcp, config: ZabbixConfig):
                 result = await api.usermacro.delete(*hostmacroids)
                 return {"hostmacroids": result.get("hostmacroids", []), "success": True}
         except Exception as e:
-            await ctx.error(f"Error deleting macros: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error deleting macros", e)

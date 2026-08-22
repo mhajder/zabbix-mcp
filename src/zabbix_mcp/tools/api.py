@@ -5,6 +5,7 @@ Zabbix MCP Server Api Tools
 from fastmcp import Context
 
 from zabbix_mcp.models import ZabbixConfig
+from zabbix_mcp.tools.errors import fail
 from zabbix_mcp.zabbix_client import ZabbixClient
 
 
@@ -29,7 +30,6 @@ def register_api_tools(mcp, config: ZabbixConfig):
 
         Returns:
             dict: Contains 'version' key with the API version string (e.g., "6.0.10").
-                  On error, contains 'error' key with the error message.
         """
         try:
             await ctx.info("Getting Zabbix API version...")
@@ -37,8 +37,7 @@ def register_api_tools(mcp, config: ZabbixConfig):
                 version = str(api.version)
                 return {"version": version}
         except Exception as e:
-            await ctx.error(f"Error getting API version: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error getting API version", e)
 
     ##########################
     # Host Tools

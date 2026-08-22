@@ -9,6 +9,7 @@ from fastmcp import Context
 from pydantic import Field
 
 from zabbix_mcp.models import ZabbixConfig
+from zabbix_mcp.tools.errors import fail
 from zabbix_mcp.tools.pagination import fetch_page
 from zabbix_mcp.tools.pagination import fetch_total
 from zabbix_mcp.zabbix_client import ZabbixClient
@@ -134,8 +135,7 @@ def register_scripts_tools(mcp, config: ZabbixConfig):
                     "has_more": offset + len(rows) < total,
                 }
         except Exception as e:
-            await ctx.error(f"Error retrieving scripts: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error retrieving scripts", e)
 
     @mcp.tool(
         tags={"zabbix", "script"},
@@ -173,8 +173,7 @@ def register_scripts_tools(mcp, config: ZabbixConfig):
                 result = await api.script.execute(scriptid=scriptid, hostid=hostid)
                 return {"result": result, "success": True}
         except Exception as e:
-            await ctx.error(f"Error executing script: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error executing script", e)
 
     ##########################
     # User Macro Tools

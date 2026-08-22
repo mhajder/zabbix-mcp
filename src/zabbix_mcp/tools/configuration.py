@@ -9,6 +9,7 @@ from fastmcp import Context
 from pydantic import Field
 
 from zabbix_mcp.models import ZabbixConfig
+from zabbix_mcp.tools.errors import fail
 from zabbix_mcp.zabbix_client import ZabbixClient
 
 
@@ -77,7 +78,6 @@ def register_configuration_tools(mcp, config: ZabbixConfig):
             dict: Contains:
                 - 'content': The exported configuration in the requested format
                 - 'success': Boolean indicating if export was successful
-                - 'error': Error message if export failed
 
         Examples:
             Export all templates as pretty YAML:
@@ -113,8 +113,7 @@ def register_configuration_tools(mcp, config: ZabbixConfig):
                 result = await api.configuration.export(**params)
                 return {"content": result, "success": True}
         except Exception as e:
-            await ctx.error(f"Error exporting configuration: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error exporting configuration", e)
 
     @mcp.tool(
         tags={"zabbix", "configuration"},
@@ -160,8 +159,7 @@ def register_configuration_tools(mcp, config: ZabbixConfig):
                 result = await api.configuration.import_(**params)
                 return {"result": result, "success": True}
         except Exception as e:
-            await ctx.error(f"Error importing configuration: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error importing configuration", e)
 
     ##########################
     # SLA Tools

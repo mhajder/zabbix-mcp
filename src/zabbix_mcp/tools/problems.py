@@ -9,6 +9,7 @@ from fastmcp import Context
 from pydantic import Field
 
 from zabbix_mcp.models import ZabbixConfig
+from zabbix_mcp.tools.errors import fail
 from zabbix_mcp.tools.pagination import fetch_page
 from zabbix_mcp.tools.pagination import fetch_total
 from zabbix_mcp.zabbix_client import ZabbixClient
@@ -191,8 +192,7 @@ def register_problems_tools(mcp, config: ZabbixConfig):
                     "has_more": offset + len(rows) < total,
                 }
         except Exception as e:
-            await ctx.error(f"Error retrieving problems: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error retrieving problems", e)
 
     ###########################
     # Event Tools
@@ -372,8 +372,7 @@ def register_problems_tools(mcp, config: ZabbixConfig):
                     "has_more": offset + len(rows) < total,
                 }
         except Exception as e:
-            await ctx.error(f"Error retrieving events: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error retrieving events", e)
 
     @mcp.tool(
         tags={"zabbix", "event"},
@@ -431,8 +430,7 @@ def register_problems_tools(mcp, config: ZabbixConfig):
                 result = await api.event.acknowledge(**params)
                 return {"eventids": result.get("eventids", []), "success": True}
         except Exception as e:
-            await ctx.error(f"Error acknowledging events: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error acknowledging events", e)
 
     ##########################
     # History Tools

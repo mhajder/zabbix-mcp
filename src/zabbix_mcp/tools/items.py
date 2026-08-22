@@ -9,6 +9,7 @@ from fastmcp import Context
 from pydantic import Field
 
 from zabbix_mcp.models import ZabbixConfig
+from zabbix_mcp.tools.errors import fail
 from zabbix_mcp.tools.pagination import fetch_page
 from zabbix_mcp.tools.pagination import fetch_total
 from zabbix_mcp.zabbix_client import ZabbixClient
@@ -193,8 +194,7 @@ def register_items_tools(mcp, config: ZabbixConfig):
                     "has_more": offset + len(rows) < total,
                 }
         except Exception as e:
-            await ctx.error(f"Error retrieving items: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error retrieving items", e)
 
     @mcp.tool(
         tags={"zabbix", "item"},
@@ -274,8 +274,7 @@ def register_items_tools(mcp, config: ZabbixConfig):
                 result = await api.item.create(**params)
                 return {"itemids": result.get("itemids", []), "success": True}
         except Exception as e:
-            await ctx.error(f"Error creating item: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error creating item", e)
 
     @mcp.tool(
         tags={"zabbix", "item"},
@@ -313,7 +312,6 @@ def register_items_tools(mcp, config: ZabbixConfig):
 
         Returns:
             dict: Contains 'itemids' list with updated item IDs and 'success' flag.
-                  On error, contains 'error' key with the error message.
         """
         try:
             await ctx.info(f"Updating item {itemid}...")
@@ -333,8 +331,7 @@ def register_items_tools(mcp, config: ZabbixConfig):
                 result = await api.item.update(**params)
                 return {"itemids": result.get("itemids", []), "success": True}
         except Exception as e:
-            await ctx.error(f"Error updating item: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error updating item", e)
 
     @mcp.tool(
         tags={"zabbix", "item"},
@@ -359,7 +356,6 @@ def register_items_tools(mcp, config: ZabbixConfig):
 
         Returns:
             dict: Contains 'itemids' list with deleted item IDs and 'success' flag.
-                  On error, contains 'error' key with the error message.
 
         Warning: Deleting an item removes all its historical data and associated triggers.
                  Consider disabling the item first to test impact before permanent deletion.
@@ -370,8 +366,7 @@ def register_items_tools(mcp, config: ZabbixConfig):
                 result = await api.item.delete(*itemids)
                 return {"itemids": result.get("itemids", []), "success": True}
         except Exception as e:
-            await ctx.error(f"Error deleting items: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error deleting items", e)
 
     ##########################
     # Trigger Tools
@@ -495,5 +490,4 @@ def register_items_tools(mcp, config: ZabbixConfig):
                     "has_more": offset + len(rows) < total,
                 }
         except Exception as e:
-            await ctx.error(f"Error retrieving item prototypes: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error retrieving item prototypes", e)

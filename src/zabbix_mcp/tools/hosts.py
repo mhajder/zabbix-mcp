@@ -9,6 +9,7 @@ from fastmcp import Context
 from pydantic import Field
 
 from zabbix_mcp.models import ZabbixConfig
+from zabbix_mcp.tools.errors import fail
 from zabbix_mcp.tools.pagination import fetch_page
 from zabbix_mcp.tools.pagination import fetch_total
 from zabbix_mcp.zabbix_client import ZabbixClient
@@ -235,8 +236,7 @@ def register_hosts_tools(mcp, config: ZabbixConfig):
                 }
 
         except Exception as e:
-            await ctx.error(f"Error retrieving hosts: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error retrieving hosts", e)
 
     @mcp.tool(
         tags={"zabbix", "host"},
@@ -302,7 +302,6 @@ def register_hosts_tools(mcp, config: ZabbixConfig):
 
         Returns:
             dict: Contains 'hostids' list with IDs of newly created hosts and 'success' flag.
-                  On error, contains 'error' key with the error message.
 
         Note: Use hostgroup_get to find group IDs and template_get to find template IDs.
         """
@@ -326,8 +325,7 @@ def register_hosts_tools(mcp, config: ZabbixConfig):
                 result = await api.host.create(**params)
                 return {"hostids": result.get("hostids", []), "success": True}
         except Exception as e:
-            await ctx.error(f"Error creating host: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error creating host", e)
 
     @mcp.tool(
         tags={"zabbix", "host"},
@@ -369,7 +367,6 @@ def register_hosts_tools(mcp, config: ZabbixConfig):
 
         Returns:
             dict: Contains 'hostids' list with updated host IDs and 'success' flag.
-                  On error, contains 'error' key with the error message.
         """
         try:
             await ctx.info(f"Updating host {hostid}...")
@@ -387,8 +384,7 @@ def register_hosts_tools(mcp, config: ZabbixConfig):
                 result = await api.host.update(**params)
                 return {"hostids": result.get("hostids", []), "success": True}
         except Exception as e:
-            await ctx.error(f"Error updating host: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error updating host", e)
 
     @mcp.tool(
         tags={"zabbix", "host"},
@@ -413,7 +409,6 @@ def register_hosts_tools(mcp, config: ZabbixConfig):
 
         Returns:
             dict: Contains 'hostids' list with deleted host IDs and 'success' flag.
-                  On error, contains 'error' key with the error message.
 
         Warning: This is permanent. Consider disabling the host instead (set status=1)
                  if you might need to restore it later.
@@ -424,8 +419,7 @@ def register_hosts_tools(mcp, config: ZabbixConfig):
                 result = await api.host.delete(*hostids)
                 return {"hostids": result.get("hostids", []), "success": True}
         except Exception as e:
-            await ctx.error(f"Error deleting hosts: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error deleting hosts", e)
 
     ##########################
     # Host Group Tools
@@ -570,8 +564,7 @@ def register_hosts_tools(mcp, config: ZabbixConfig):
                     "has_more": offset + len(rows) < total,
                 }
         except Exception as e:
-            await ctx.error(f"Error retrieving host groups: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error retrieving host groups", e)
 
     @mcp.tool(
         tags={"zabbix", "hostgroup"},
@@ -607,8 +600,7 @@ def register_hosts_tools(mcp, config: ZabbixConfig):
                 result = await api.hostgroup.create(name=name)
                 return {"groupids": result.get("groupids", []), "success": True}
         except Exception as e:
-            await ctx.error(f"Error creating host group: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error creating host group", e)
 
     @mcp.tool(
         tags={"zabbix", "hostgroup"},
@@ -635,7 +627,6 @@ def register_hosts_tools(mcp, config: ZabbixConfig):
 
         Returns:
             dict: Contains 'groupids' list with updated group IDs and 'success' flag.
-                  On error, contains 'error' key with the error message.
         """
         try:
             await ctx.info(f"Updating host group {groupid}...")
@@ -647,8 +638,7 @@ def register_hosts_tools(mcp, config: ZabbixConfig):
                 result = await api.hostgroup.update(**params)
                 return {"groupids": result.get("groupids", []), "success": True}
         except Exception as e:
-            await ctx.error(f"Error updating host group: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error updating host group", e)
 
     @mcp.tool(
         tags={"zabbix", "hostgroup"},
@@ -673,7 +663,6 @@ def register_hosts_tools(mcp, config: ZabbixConfig):
 
         Returns:
             dict: Contains 'groupids' list with deleted group IDs and 'success' flag.
-                  On error, contains 'error' key with the error message.
 
         Warning: If hosts belong to the group, they will no longer be members after deletion.
                  Consider reassigning hosts to different groups before deleting.
@@ -684,8 +673,7 @@ def register_hosts_tools(mcp, config: ZabbixConfig):
                 result = await api.hostgroup.delete(*groupids)
                 return {"groupids": result.get("groupids", []), "success": True}
         except Exception as e:
-            await ctx.error(f"Error deleting host groups: {e!s}")
-            return {"error": str(e)}
+            await fail(ctx, "Error deleting host groups", e)
 
     ##########################
     # Template Tools
