@@ -75,7 +75,8 @@ def register_users_tools(mcp, config: ZabbixConfig):
 
         Args:
             userids: List of user IDs to get. If empty, returns all users.
-            search: Dictionary with search criteria like {'alias': 'admin'} for username matching.
+            search: Dictionary with search criteria like {'username': 'admin'}. Zabbix 5.4
+                    renamed 'alias' to 'username' and rejects the old name.
             filter_params: Additional filter parameters for advanced filtering.
             limit: Maximum number of results to return (default 100). Set higher for more results.
             offset: Number of matching records to skip, for paging.
@@ -86,10 +87,11 @@ def register_users_tools(mcp, config: ZabbixConfig):
                   'has_more' indicating whether further pages exist.
                   Each user includes:
                   - userid: Unique user ID
-                  - alias: Username login
+                  - username: Login name
                   - name: User's full name
                   - surname: User's last name
-                  - type: User type (1=Zabbix user, 2=Zabbix admin, 3=Zabbix super admin)
+                  - roleid: The user's role, which determines permissions. Zabbix 5.2
+                    replaced the numeric 'type' field with role objects.
 
         Note: Use user_create to add new users, user_delete to remove them.
         """

@@ -204,7 +204,12 @@ def register_templates_tools(mcp, config: ZabbixConfig):
     async def template_create(
         ctx: Context,
         host: Annotated[str, Field(description="Technical name of the template.")],
-        groups: Annotated[list[dict[str, str]], Field(description="Host groups.")],
+        groups: Annotated[
+            list[dict[str, str]],
+            Field(
+                description="Template groups the template belongs to, e.g. [{'groupid': '10'}]. Since Zabbix 6.2 these are template groups, not host groups."
+            ),
+        ],
         name: Annotated[str | None, Field(default=None)] = None,
         description: Annotated[str | None, Field(default=None)] = None,
     ) -> dict:
@@ -219,8 +224,9 @@ def register_templates_tools(mcp, config: ZabbixConfig):
             name: Template name (required). Example: 'Apache Web Server', 'PostgreSQL Database'.
                   Should describe what the template monitors.
             description: Optional template description explaining its purpose and use.
-            groups: List of group IDs where this template will be visible. Required, typically
-                    set to group ID 1 (Templates) for built-in templates.
+            groups: Template group IDs this template belongs to. Required. Zabbix 6.2 split
+                    template groups out from host groups, so a host group id is rejected
+                    here - find ids with templategroup.get or the Templates group in the UI.
 
         Returns:
             dict: Contains 'templateids' list with newly created template ID(s) and 'success' flag.

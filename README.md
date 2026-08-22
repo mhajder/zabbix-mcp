@@ -42,7 +42,9 @@ Zabbix MCP Server is a Python-based Model Context Protocol (MCP) server designed
 ### Prerequisites
 
 - Python 3.11 to 3.14
-- Access to a Zabbix server (5.4+)
+- Access to a Zabbix server. Versions 6.0 to 7.4 are supported - that is the range
+  the `zabbix-utils` client accepts, and it refuses to connect outside it unless
+  `ZABBIX_SKIP_VERSION_CHECK=true` is set
 - Valid Zabbix API token or user credentials with appropriate permissions
 
 ### Quick Install from PyPI
@@ -149,7 +151,7 @@ uv run prek install
 ZABBIX_URL=https://zabbix.example.com/api_jsonrpc.php
 
 # Authentication - use EITHER token OR user/password
-# API Token (preferred for Zabbix 5.4+)
+# API Token (preferred over user/password)
 ZABBIX_TOKEN=your-api-token
 # OR Username/Password (for older versions)
 # ZABBIX_USER=Admin

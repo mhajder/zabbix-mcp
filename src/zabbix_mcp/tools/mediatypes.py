@@ -75,7 +75,8 @@ def register_mediatypes_tools(mcp, config: ZabbixConfig):
 
         Args:
             mediatypeids: List of media type IDs to get. If empty, returns all media types.
-            search: Dictionary with search criteria like {'description': 'email'}.
+            search: Dictionary with search criteria like {'name': 'Email'}. Zabbix 5.4
+                    renamed the media type 'description' field to 'name'.
             filter_params: Additional filter parameters for advanced filtering.
             limit: Maximum number of results to return (default 100). Set higher for more results.
             offset: Number of matching records to skip, for paging.

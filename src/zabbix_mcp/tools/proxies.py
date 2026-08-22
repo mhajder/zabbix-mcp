@@ -75,7 +75,8 @@ def register_proxies_tools(mcp, config: ZabbixConfig):
 
         Args:
             proxyids: List of proxy IDs to get. If empty, returns all proxies.
-            search: Dictionary with search criteria like {'host': 'proxy1'} for name matching.
+            search: Dictionary with search criteria like {'name': 'proxy1'}. Zabbix 7.0
+                    renamed the proxy 'host' field to 'name' and rejects the old one.
             filter_params: Additional filter parameters for advanced filtering.
             limit: Maximum number of results to return (default 100). Set higher for more results.
             offset: Number of matching records to skip, for paging.
@@ -87,7 +88,8 @@ def register_proxies_tools(mcp, config: ZabbixConfig):
                   Each proxy includes:
                   - proxyid: Unique proxy ID
                   - host: Proxy hostname/name
-                  - status: 5=active proxy, 6=passive proxy
+                  - operating_mode: 0=active proxy, 1=passive proxy. Zabbix 7.0 replaced
+                    the old 'status' field (5=active, 6=passive) with this one.
 
         Note: Use proxy_create to add new proxies, proxy_delete to remove them.
               Assign hosts to proxies with host_create or host_update using proxyid field.

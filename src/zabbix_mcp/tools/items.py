@@ -137,7 +137,7 @@ def register_items_tools(mcp, config: ZabbixConfig):
                   - type: Collection method (0=Zabbix agent, 2=SNMP, 3=IPMI, etc.)
                   - value_type: Data type (0=numeric float, 1=character, 3=numeric unsigned, 4=log)
                   - status: 0=enabled, 1=disabled
-                  - interval: Collection interval in seconds
+                  - delay: Collection interval, e.g. '1m' (0 for trapper and dependent items)
 
         Note: Use item_create to add new metrics to monitor, item_delete to remove them.
         """
