@@ -215,7 +215,20 @@ def register_items_tools(mcp, config: ZabbixConfig):
         value_type: Annotated[
             int, Field(description="Value type (0=float, 1=char, 3=unsigned, 4=text).")
         ],
-        delay: Annotated[str, Field(default="1m")] = "1m",
+        delay: Annotated[
+            str,
+            Field(
+                default="1m",
+                description="Update interval. Must be '0' for trapper (2) and dependent (18) items.",
+            ),
+        ] = "1m",
+        interfaceid: Annotated[
+            str | None,
+            Field(
+                default=None,
+                description="Host interface to poll through. Required for Zabbix agent (0), SNMP agent (20), SNMP trap (17), IPMI (12) and JMX (16) items on a host.",
+            ),
+        ] = None,
         units: Annotated[str | None, Field(default=None)] = None,
         description: Annotated[str | None, Field(default=None)] = None,
     ) -> dict:
@@ -246,6 +259,12 @@ def register_items_tools(mcp, config: ZabbixConfig):
                         - 3 = Numeric (unsigned)
                         - 4 = Log data
             delay: Collection interval. Default '1m'. Use time suffixes like '30s', '5m', '1h'.
+                   Must be '0' for trapper (type 2) and dependent (type 18) items, which are
+                   pushed rather than polled - Zabbix rejects any other value for them.
+            interfaceid: ID of the host interface to collect through. Zabbix requires it for
+                   Zabbix agent, SNMP agent, SNMP trap, IPMI and JMX items belonging to a
+                   host; find it with host_get(select_interfaces=True). Leave unset for
+                   trapper, dependent, calculated, internal and script items.
             units: Optional units for the values like 'bytes', 'CPU%', 'rpm'.
             description: Optional item description explaining its purpose.
 
@@ -265,6 +284,8 @@ def register_items_tools(mcp, config: ZabbixConfig):
                 "value_type": value_type,
                 "delay": delay,
             }
+            if interfaceid:
+                params["interfaceid"] = interfaceid
             if units:
                 params["units"] = units
             if description:
