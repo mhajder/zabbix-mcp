@@ -45,14 +45,6 @@ def register_templates_tools(mcp, config: ZabbixConfig):
                 ge=1,
             ),
         ] = 100,
-        offset: Annotated[
-            int,
-            Field(
-                default=0,
-                description="Number of results to skip (for pagination). Requires sortfield to be set.",
-                ge=0,
-            ),
-        ] = 0,
         select_groups: Annotated[
             bool,
             Field(
@@ -116,7 +108,6 @@ def register_templates_tools(mcp, config: ZabbixConfig):
             search: Substring search in template name. Matches partial names like 'Linux' finds 'Linux Server Template'.
             template_name_contains: Shortcut to search for templates by name (adds to 'search').
             limit: Maximum number of results to return (default 100). Set higher for more results.
-            offset: Number of results to skip for pagination. Use with sortfield.
             select_groups: If true, each template includes a 'groups' list with its template groups.
             select_hosts: If true, each template includes a 'hosts' list with linked hosts.
             select_templates: If true, each template includes a 'templates' list with linked templates.
@@ -125,7 +116,7 @@ def register_templates_tools(mcp, config: ZabbixConfig):
 
         Returns:
             dict: Contains 'templates' list with template objects, 'count' of results returned,
-                  and pagination metadata ('limit', 'offset').
+                  and the applied 'limit'.
                   Each template object has:
                   - templateid: Unique template ID
                   - name: Template name (e.g., 'Linux Server Template')
@@ -154,8 +145,6 @@ def register_templates_tools(mcp, config: ZabbixConfig):
             if _search:
                 params["search"] = _search
             params["limit"] = limit
-            if offset > 0:
-                params["offset"] = offset
             if select_groups:
                 params["selectGroups"] = "extend"
             if select_hosts:
@@ -173,7 +162,6 @@ def register_templates_tools(mcp, config: ZabbixConfig):
                     "templates": result,
                     "count": int(result) if count_output else len(result),
                     "limit": limit,
-                    "offset": offset,
                 }
         except Exception as e:
             await ctx.error(f"Error retrieving templates: {e!s}")

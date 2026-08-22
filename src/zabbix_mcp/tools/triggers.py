@@ -47,14 +47,6 @@ def register_triggers_tools(mcp, config: ZabbixConfig):
                 ge=1,
             ),
         ] = 100,
-        offset: Annotated[
-            int,
-            Field(
-                default=0,
-                description="Number of results to skip (for pagination). Requires sortfield to be set.",
-                ge=0,
-            ),
-        ] = 0,
         only_true: Annotated[
             bool,
             Field(default=False, description="Only return triggers in problem state."),
@@ -100,7 +92,6 @@ def register_triggers_tools(mcp, config: ZabbixConfig):
             filter_params: Additional filter parameters for advanced filtering.
             description_contains: Shortcut to search for triggers by description (name) (adds to 'search').
             limit: Maximum number of results to return (default 100). Set higher for more results.
-            offset: Number of results to skip for pagination. Use with sortfield.
             only_true: If true, only return triggers currently in problem state.
             min_severity: Minimum severity level (0=Not classified, 1=Information, 2=Warning,
                          3=Average, 4=High, 5=Disaster). Returns triggers of this severity or higher.
@@ -109,7 +100,7 @@ def register_triggers_tools(mcp, config: ZabbixConfig):
 
         Returns:
             dict: Contains 'triggers' list with trigger objects, 'count' of results returned,
-                  and pagination metadata ('limit', 'offset').
+                  and the applied 'limit'.
                   Each trigger includes:
                   - triggerid: Unique trigger ID
                   - description: Trigger name/description
@@ -145,8 +136,6 @@ def register_triggers_tools(mcp, config: ZabbixConfig):
             if filter_params:
                 params["filter"] = filter_params
             params["limit"] = limit
-            if offset > 0:
-                params["offset"] = offset
             if only_true:
                 params["only_true"] = only_true
             if min_severity is not None:
@@ -160,7 +149,6 @@ def register_triggers_tools(mcp, config: ZabbixConfig):
                     "triggers": result,
                     "count": int(result) if count_output else len(result),
                     "limit": limit,
-                    "offset": offset,
                 }
         except Exception as e:
             await ctx.error(f"Error retrieving triggers: {e!s}")

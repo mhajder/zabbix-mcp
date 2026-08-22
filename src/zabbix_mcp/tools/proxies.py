@@ -37,14 +37,6 @@ def register_proxies_tools(mcp, config: ZabbixConfig):
                 ge=1,
             ),
         ] = 100,
-        offset: Annotated[
-            int,
-            Field(
-                default=0,
-                description="Number of results to skip (for pagination). Requires sortfield to be set.",
-                ge=0,
-            ),
-        ] = 0,
         sortfield: Annotated[
             str | None,
             Field(default=None, description="Field to sort by."),
@@ -72,11 +64,10 @@ def register_proxies_tools(mcp, config: ZabbixConfig):
             search: Dictionary with search criteria like {'host': 'proxy1'} for name matching.
             filter_params: Additional filter parameters for advanced filtering.
             limit: Maximum number of results to return (default 100). Set higher for more results.
-            offset: Number of results to skip for pagination. Use with sortfield.
 
         Returns:
             dict: Contains 'proxies' list with proxy objects, 'count' of returned proxies,
-                  and pagination metadata ('limit', 'offset').
+                  and the applied 'limit'.
                   Each proxy includes:
                   - proxyid: Unique proxy ID
                   - host: Proxy hostname/name
@@ -101,8 +92,6 @@ def register_proxies_tools(mcp, config: ZabbixConfig):
             if filter_params:
                 params["filter"] = filter_params
             params["limit"] = limit
-            if offset > 0:
-                params["offset"] = offset
 
             async with ZabbixClient(config) as api:
                 result = await api.proxy.get(**params)
@@ -110,7 +99,6 @@ def register_proxies_tools(mcp, config: ZabbixConfig):
                     "proxies": result,
                     "count": int(result) if count_output else len(result),
                     "limit": limit,
-                    "offset": offset,
                 }
         except Exception as e:
             await ctx.error(f"Error retrieving proxies: {e!s}")

@@ -57,14 +57,6 @@ def register_problems_tools(mcp, config: ZabbixConfig):
                 ge=1,
             ),
         ] = 100,
-        offset: Annotated[
-            int,
-            Field(
-                default=0,
-                description="Number of results to skip (for pagination). Requires sortfield to be set.",
-                ge=0,
-            ),
-        ] = 0,
         acknowledged: Annotated[
             bool | None,
             Field(
@@ -114,13 +106,12 @@ def register_problems_tools(mcp, config: ZabbixConfig):
             search: Dictionary with search criteria like {'name': 'CPU'}.
             name_contains: Shortcut to search for problems by name (adds to 'search').
             limit: Maximum number of results to return (default 100). Set higher for more results.
-            offset: Number of results to skip for pagination. Use with sortfield.
             acknowledged: False = unacknowledged only, True = acknowledged only, None = all.
             suppressed: False = unsuppressed only, True = suppressed only, None = all.
 
         Returns:
             dict: Contains 'problems' list with problem objects, 'count' of results returned,
-                  and pagination metadata ('limit', 'offset').
+                  and the applied 'limit'.
                   Each problem includes:
                   - eventid: Event ID of the problem
                   - objectid: Trigger ID that caused the problem
@@ -161,8 +152,6 @@ def register_problems_tools(mcp, config: ZabbixConfig):
             if _search:
                 params["search"] = _search
             params["limit"] = limit
-            if offset > 0:
-                params["offset"] = offset
             if acknowledged is not None:
                 params["acknowledged"] = acknowledged
             if suppressed is not None:
@@ -174,7 +163,6 @@ def register_problems_tools(mcp, config: ZabbixConfig):
                     "problems": result,
                     "count": int(result) if count_output else len(result),
                     "limit": limit,
-                    "offset": offset,
                 }
         except Exception as e:
             await ctx.error(f"Error retrieving problems: {e!s}")
@@ -209,14 +197,6 @@ def register_problems_tools(mcp, config: ZabbixConfig):
                 ge=1,
             ),
         ] = 100,
-        offset: Annotated[
-            int,
-            Field(
-                default=0,
-                description="Number of results to skip (for pagination). Requires sortfield to be set.",
-                ge=0,
-            ),
-        ] = 0,
         acknowledged: Annotated[
             bool | None,
             Field(
@@ -283,7 +263,6 @@ def register_problems_tools(mcp, config: ZabbixConfig):
             time_from: Unix timestamp to filter events from this time onwards.
             time_till: Unix timestamp to filter events up to this time.
             limit: Maximum number of results to return (default 100). Set higher for more results.
-            offset: Number of results to skip for pagination. Use with sortfield.
             acknowledged: False = unacknowledged only, True = acknowledged only, None = all.
             suppressed: False = unsuppressed only, True = suppressed only, None = all.
             select_hosts: If true, include the hosts each event belongs to.
@@ -292,7 +271,7 @@ def register_problems_tools(mcp, config: ZabbixConfig):
 
         Returns:
             dict: Contains 'events' list with event objects, 'count' of returned events,
-                  and pagination metadata ('limit', 'offset').
+                  and the applied 'limit'.
                   Each event includes:
                   - eventid: Unique event ID
                   - objectid: Trigger ID that generated the event
@@ -324,8 +303,6 @@ def register_problems_tools(mcp, config: ZabbixConfig):
             if time_till:
                 params["time_till"] = time_till
             params["limit"] = limit
-            if offset > 0:
-                params["offset"] = offset
             if acknowledged is not None:
                 params["acknowledged"] = acknowledged
             if suppressed is not None:
@@ -343,7 +320,6 @@ def register_problems_tools(mcp, config: ZabbixConfig):
                     "events": result,
                     "count": int(result) if count_output else len(result),
                     "limit": limit,
-                    "offset": offset,
                 }
         except Exception as e:
             await ctx.error(f"Error retrieving events: {e!s}")

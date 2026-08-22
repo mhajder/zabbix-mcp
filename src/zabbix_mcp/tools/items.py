@@ -54,14 +54,6 @@ def register_items_tools(mcp, config: ZabbixConfig):
                 ge=1,
             ),
         ] = 100,
-        offset: Annotated[
-            int,
-            Field(
-                default=0,
-                description="Number of results to skip (for pagination). Requires sortfield to be set.",
-                ge=0,
-            ),
-        ] = 0,
         select_hosts: Annotated[
             bool,
             Field(
@@ -115,14 +107,13 @@ def register_items_tools(mcp, config: ZabbixConfig):
             item_name_contains: Shortcut to search for items by name (adds to 'search').
             item_key_contains: Shortcut to search for items by key (adds to 'search').
             limit: Maximum number of results to return (default 100). Set higher for more results.
-            offset: Number of results to skip for pagination. Use with sortfield.
             select_hosts: If true, include the hosts each item belongs to.
             select_tags: If true, include the tags for each item.
             select_triggers: If true, include the triggers associated with each item.
 
         Returns:
             dict: Contains 'items' list with item objects, 'count' of results returned,
-                  and pagination metadata ('limit', 'offset').
+                  and the applied 'limit'.
                   Each item includes:
                   - itemid: Unique item ID
                   - name: Item name (e.g., 'CPU load average')
@@ -161,8 +152,6 @@ def register_items_tools(mcp, config: ZabbixConfig):
             if filter_params:
                 params["filter"] = dict(filter_params)
             params["limit"] = limit
-            if offset > 0:
-                params["offset"] = offset
             if select_hosts:
                 params["selectHosts"] = "extend"
             if select_tags:
@@ -176,7 +165,6 @@ def register_items_tools(mcp, config: ZabbixConfig):
                     "items": result,
                     "count": int(result) if count_output else len(result),
                     "limit": limit,
-                    "offset": offset,
                 }
         except Exception as e:
             await ctx.error(f"Error retrieving items: {e!s}")
@@ -387,14 +375,6 @@ def register_items_tools(mcp, config: ZabbixConfig):
                 ge=1,
             ),
         ] = 100,
-        offset: Annotated[
-            int,
-            Field(
-                default=0,
-                description="Number of results to skip (for pagination). Requires sortfield to be set.",
-                ge=0,
-            ),
-        ] = 0,
         sortfield: Annotated[
             str | None,
             Field(default=None, description="Field to sort by."),
@@ -424,11 +404,10 @@ def register_items_tools(mcp, config: ZabbixConfig):
             search: Dictionary with search criteria like {'name': 'CPU'}.
             filter_params: Additional filter parameters for advanced filtering.
             limit: Maximum number of results to return (default 100). Set higher for more results.
-            offset: Number of results to skip for pagination. Use with sortfield.
 
         Returns:
             dict: Contains 'itemprototypes' list with item prototype objects, 'count',
-                  and pagination metadata ('limit', 'offset').
+                  and the applied 'limit'.
                   Each prototype includes:
                   - itemid: Item prototype ID
                   - name: Item prototype name
@@ -458,8 +437,6 @@ def register_items_tools(mcp, config: ZabbixConfig):
                 params["filter"] = filter_params
 
             params["limit"] = limit
-            if offset > 0:
-                params["offset"] = offset
 
             async with ZabbixClient(config) as api:
                 result = await api.itemprototype.get(**params)
@@ -467,7 +444,6 @@ def register_items_tools(mcp, config: ZabbixConfig):
                     "itemprototypes": result,
                     "count": int(result) if count_output else len(result),
                     "limit": limit,
-                    "offset": offset,
                 }
         except Exception as e:
             await ctx.error(f"Error retrieving item prototypes: {e!s}")

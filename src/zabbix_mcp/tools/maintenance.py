@@ -37,14 +37,6 @@ def register_maintenance_tools(mcp, config: ZabbixConfig):
                 ge=1,
             ),
         ] = 100,
-        offset: Annotated[
-            int,
-            Field(
-                default=0,
-                description="Number of results to skip (for pagination). Requires sortfield to be set.",
-                ge=0,
-            ),
-        ] = 0,
         sortfield: Annotated[
             str | None,
             Field(default=None, description="Field to sort by."),
@@ -72,11 +64,10 @@ def register_maintenance_tools(mcp, config: ZabbixConfig):
             groupids: List of host group IDs to get maintenance for.
             hostids: List of host IDs to get maintenance for.
             limit: Maximum number of results to return (default 100). Set higher for more results.
-            offset: Number of results to skip for pagination. Use with sortfield.
 
         Returns:
             dict: Contains 'maintenance' list with maintenance objects, 'count' of returned records,
-                  and pagination metadata ('limit', 'offset').
+                  and the applied 'limit'.
                   Each maintenance includes:
                   - maintenanceid: Unique maintenance ID
                   - name: Maintenance window name
@@ -102,8 +93,6 @@ def register_maintenance_tools(mcp, config: ZabbixConfig):
                 params["hostids"] = hostids
 
             params["limit"] = limit
-            if offset > 0:
-                params["offset"] = offset
 
             async with ZabbixClient(config) as api:
                 result = await api.maintenance.get(**params)
@@ -111,7 +100,6 @@ def register_maintenance_tools(mcp, config: ZabbixConfig):
                     "maintenance": result,
                     "count": int(result) if count_output else len(result),
                     "limit": limit,
-                    "offset": offset,
                 }
         except Exception as e:
             await ctx.error(f"Error retrieving maintenance: {e!s}")

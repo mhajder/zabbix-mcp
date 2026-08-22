@@ -45,14 +45,6 @@ def register_history_tools(mcp, config: ZabbixConfig):
                 ge=1,
             ),
         ] = 100,
-        offset: Annotated[
-            int,
-            Field(
-                default=0,
-                description="Number of results to skip (for pagination). Requires sortfield to be set.",
-                ge=0,
-            ),
-        ] = 0,
         sortfield: Annotated[str, Field(default="clock")] = "clock",
         sortorder: Annotated[str, Field(default="DESC")] = "DESC",
         count_output: Annotated[
@@ -80,13 +72,12 @@ def register_history_tools(mcp, config: ZabbixConfig):
             time_from: Unix timestamp to get history from this time onwards.
             time_till: Unix timestamp to get history up to this time.
             limit: Maximum number of results to return (default 100). Set higher for more results.
-            offset: Number of results to skip for pagination. Use with sortfield.
             sortfield: Field to sort by (default 'clock' = timestamp).
             sortorder: Sort direction - 'ASC' (oldest first) or 'DESC' (newest first). Default is DESC.
 
         Returns:
             dict: Contains 'history' list with value objects, 'count' of returned values,
-                  and pagination metadata ('limit', 'offset').
+                  and the applied 'limit'.
                   Each value includes:
                   - itemid: Item ID this value belongs to
                   - value: The collected metric value
@@ -109,8 +100,6 @@ def register_history_tools(mcp, config: ZabbixConfig):
             if time_till:
                 params["time_till"] = time_till
             params["limit"] = limit
-            if offset > 0:
-                params["offset"] = offset
 
             if count_output:
                 params["countOutput"] = True
@@ -121,7 +110,6 @@ def register_history_tools(mcp, config: ZabbixConfig):
                     "history": result,
                     "count": int(result) if count_output else len(result),
                     "limit": limit,
-                    "offset": offset,
                 }
         except Exception as e:
             await ctx.error(f"Error retrieving history: {e!s}")
@@ -148,14 +136,6 @@ def register_history_tools(mcp, config: ZabbixConfig):
                 ge=1,
             ),
         ] = 100,
-        offset: Annotated[
-            int,
-            Field(
-                default=0,
-                description="Number of results to skip (for pagination). Requires sortfield to be set.",
-                ge=0,
-            ),
-        ] = 0,
         sortfield: Annotated[
             str | None,
             Field(default=None, description="Field to sort by."),
@@ -184,11 +164,10 @@ def register_history_tools(mcp, config: ZabbixConfig):
             time_from: Unix timestamp to get trends from this time onwards.
             time_till: Unix timestamp to get trends up to this time.
             limit: Maximum number of results to return (default 100). Set higher for more results.
-            offset: Number of results to skip for pagination. Use with sortfield.
 
         Returns:
             dict: Contains 'trends' list with aggregate data, 'count' of returned records,
-                  and pagination metadata ('limit', 'offset').
+                  and the applied 'limit'.
                   Each trend record includes:
                   - itemid: Item ID this trend belongs to
                   - clock: Unix timestamp (at hour boundaries)
@@ -208,8 +187,6 @@ def register_history_tools(mcp, config: ZabbixConfig):
             if time_till:
                 params["time_till"] = time_till
             params["limit"] = limit
-            if offset > 0:
-                params["offset"] = offset
 
             if sortfield:
                 params["sortfield"] = sortfield
@@ -224,7 +201,6 @@ def register_history_tools(mcp, config: ZabbixConfig):
                     "trends": result,
                     "count": int(result) if count_output else len(result),
                     "limit": limit,
-                    "offset": offset,
                 }
         except Exception as e:
             await ctx.error(f"Error retrieving trends: {e!s}")

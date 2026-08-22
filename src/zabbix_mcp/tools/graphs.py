@@ -39,14 +39,6 @@ def register_graphs_tools(mcp, config: ZabbixConfig):
                 ge=1,
             ),
         ] = 100,
-        offset: Annotated[
-            int,
-            Field(
-                default=0,
-                description="Number of results to skip (for pagination). Requires sortfield to be set.",
-                ge=0,
-            ),
-        ] = 0,
         select_items: Annotated[
             bool,
             Field(
@@ -97,14 +89,13 @@ def register_graphs_tools(mcp, config: ZabbixConfig):
             search: Dictionary with search criteria like {'name': 'CPU'}.
             filter_params: Additional filter parameters for advanced filtering.
             limit: Maximum number of results to return (default 100). Set higher for more results.
-            offset: Number of results to skip for pagination. Use with sortfield.
             select_items: If true, each graph includes a 'gitems' list with graph items.
             select_hosts: If true, each graph includes a 'hosts' list.
             select_templates: If true, each graph includes a 'templates' list.
 
         Returns:
             dict: Contains 'graphs' list with graph objects, 'count' of returned graphs,
-                  and pagination metadata ('limit', 'offset').
+                  and the applied 'limit'.
                   Each graph includes:
                   - graphid: Unique graph ID
                   - name: Graph name
@@ -132,8 +123,6 @@ def register_graphs_tools(mcp, config: ZabbixConfig):
             if filter_params:
                 params["filter"] = filter_params
             params["limit"] = limit
-            if offset > 0:
-                params["offset"] = offset
             if select_items:
                 params["selectGraphItems"] = "extend"
             if select_hosts:
@@ -147,7 +136,6 @@ def register_graphs_tools(mcp, config: ZabbixConfig):
                     "graphs": result,
                     "count": int(result) if count_output else len(result),
                     "limit": limit,
-                    "offset": offset,
                 }
         except Exception as e:
             await ctx.error(f"Error retrieving graphs: {e!s}")

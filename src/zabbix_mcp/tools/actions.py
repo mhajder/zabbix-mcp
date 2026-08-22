@@ -39,14 +39,6 @@ def register_actions_tools(mcp, config: ZabbixConfig):
                 ge=1,
             ),
         ] = 100,
-        offset: Annotated[
-            int,
-            Field(
-                default=0,
-                description="Number of results to skip (for pagination). Requires sortfield to be set.",
-                ge=0,
-            ),
-        ] = 0,
         sortfield: Annotated[
             str | None,
             Field(default=None, description="Field to sort by."),
@@ -76,11 +68,10 @@ def register_actions_tools(mcp, config: ZabbixConfig):
             search: Dictionary with search criteria like {'name': 'notify'}.
             filter_params: Additional filter parameters for advanced filtering.
             limit: Maximum number of results to return (default 100). Set higher for more results.
-            offset: Number of results to skip for pagination. Use with sortfield.
 
         Returns:
             dict: Contains 'actions' list with action objects, 'count' of returned actions,
-                  and pagination metadata ('limit', 'offset').
+                  and the applied 'limit'.
                   Each action includes:
                   - actionid: Unique action ID
                   - name: Action name/description
@@ -110,8 +101,6 @@ def register_actions_tools(mcp, config: ZabbixConfig):
                 params["filter"] = filter_params
 
             params["limit"] = limit
-            if offset > 0:
-                params["offset"] = offset
 
             async with ZabbixClient(config) as api:
                 result = await api.action.get(**params)
@@ -119,7 +108,6 @@ def register_actions_tools(mcp, config: ZabbixConfig):
                     "actions": result,
                     "count": int(result) if count_output else len(result),
                     "limit": limit,
-                    "offset": offset,
                 }
         except Exception as e:
             await ctx.error(f"Error retrieving actions: {e!s}")

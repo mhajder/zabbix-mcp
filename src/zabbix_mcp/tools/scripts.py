@@ -39,14 +39,6 @@ def register_scripts_tools(mcp, config: ZabbixConfig):
                 ge=1,
             ),
         ] = 100,
-        offset: Annotated[
-            int,
-            Field(
-                default=0,
-                description="Number of results to skip (for pagination). Requires sortfield to be set.",
-                ge=0,
-            ),
-        ] = 0,
         sortfield: Annotated[
             str | None,
             Field(default=None, description="Field to sort by."),
@@ -76,11 +68,10 @@ def register_scripts_tools(mcp, config: ZabbixConfig):
             search: Dictionary with search criteria like {'name': 'restart'}.
             filter_params: Additional filter parameters for advanced filtering.
             limit: Maximum number of results to return (default 100). Set higher for more results.
-            offset: Number of results to skip for pagination. Use with sortfield.
 
         Returns:
             dict: Contains 'scripts' list with script objects, 'count' of returned scripts,
-                  and pagination metadata ('limit', 'offset').
+                  and the applied 'limit'.
                   Each script includes:
                   - scriptid: Unique script ID
                   - name: Script name
@@ -109,8 +100,6 @@ def register_scripts_tools(mcp, config: ZabbixConfig):
                 params["filter"] = filter_params
 
             params["limit"] = limit
-            if offset > 0:
-                params["offset"] = offset
 
             async with ZabbixClient(config) as api:
                 result = await api.script.get(**params)
@@ -118,7 +107,6 @@ def register_scripts_tools(mcp, config: ZabbixConfig):
                     "scripts": result,
                     "count": int(result) if count_output else len(result),
                     "limit": limit,
-                    "offset": offset,
                 }
         except Exception as e:
             await ctx.error(f"Error retrieving scripts: {e!s}")

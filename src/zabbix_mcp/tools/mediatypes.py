@@ -37,14 +37,6 @@ def register_mediatypes_tools(mcp, config: ZabbixConfig):
                 ge=1,
             ),
         ] = 100,
-        offset: Annotated[
-            int,
-            Field(
-                default=0,
-                description="Number of results to skip (for pagination). Requires sortfield to be set.",
-                ge=0,
-            ),
-        ] = 0,
         sortfield: Annotated[
             str | None,
             Field(default=None, description="Field to sort by."),
@@ -72,11 +64,10 @@ def register_mediatypes_tools(mcp, config: ZabbixConfig):
             search: Dictionary with search criteria like {'description': 'email'}.
             filter_params: Additional filter parameters for advanced filtering.
             limit: Maximum number of results to return (default 100). Set higher for more results.
-            offset: Number of results to skip for pagination. Use with sortfield.
 
         Returns:
             dict: Contains 'mediatypes' list with media type objects, 'count' of returned types,
-                  and pagination metadata ('limit', 'offset').
+                  and the applied 'limit'.
                   Each media type includes:
                   - mediatypeid: Unique media type ID
                   - type: Type code (0=email, 1=Exec script, 2=SMS, 3=Webhook, etc.)
@@ -101,8 +92,6 @@ def register_mediatypes_tools(mcp, config: ZabbixConfig):
                 params["filter"] = filter_params
 
             params["limit"] = limit
-            if offset > 0:
-                params["offset"] = offset
 
             async with ZabbixClient(config) as api:
                 result = await api.mediatype.get(**params)
@@ -110,7 +99,6 @@ def register_mediatypes_tools(mcp, config: ZabbixConfig):
                     "mediatypes": result,
                     "count": int(result) if count_output else len(result),
                     "limit": limit,
-                    "offset": offset,
                 }
         except Exception as e:
             await ctx.error(f"Error retrieving media types: {e!s}")

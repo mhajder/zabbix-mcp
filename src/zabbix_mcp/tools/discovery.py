@@ -39,14 +39,6 @@ def register_discovery_tools(mcp, config: ZabbixConfig):
                 ge=1,
             ),
         ] = 100,
-        offset: Annotated[
-            int,
-            Field(
-                default=0,
-                description="Number of results to skip (for pagination). Requires sortfield to be set.",
-                ge=0,
-            ),
-        ] = 0,
         sortfield: Annotated[
             str | None,
             Field(default=None, description="Field to sort by."),
@@ -76,11 +68,10 @@ def register_discovery_tools(mcp, config: ZabbixConfig):
             search: Dictionary with search criteria like {'name': 'SNMP'}.
             filter_params: Additional filter parameters for advanced filtering.
             limit: Maximum number of results to return (default 100). Set higher for more results.
-            offset: Number of results to skip for pagination. Use with sortfield.
 
         Returns:
             dict: Contains 'discoveryrules' list with discovery rule objects, 'count',
-                  and pagination metadata ('limit', 'offset').
+                  and the applied 'limit'.
                   Each rule includes:
                   - itemid: Discovery rule item ID
                   - name: Discovery rule name
@@ -110,8 +101,6 @@ def register_discovery_tools(mcp, config: ZabbixConfig):
                 params["filter"] = filter_params
 
             params["limit"] = limit
-            if offset > 0:
-                params["offset"] = offset
 
             async with ZabbixClient(config) as api:
                 result = await api.discoveryrule.get(**params)
@@ -119,7 +108,6 @@ def register_discovery_tools(mcp, config: ZabbixConfig):
                     "discoveryrules": result,
                     "count": int(result) if count_output else len(result),
                     "limit": limit,
-                    "offset": offset,
                 }
         except Exception as e:
             await ctx.error(f"Error retrieving discovery rules: {e!s}")
@@ -147,14 +135,6 @@ def register_discovery_tools(mcp, config: ZabbixConfig):
                 ge=1,
             ),
         ] = 100,
-        offset: Annotated[
-            int,
-            Field(
-                default=0,
-                description="Number of results to skip (for pagination). Requires sortfield to be set.",
-                ge=0,
-            ),
-        ] = 0,
         sortfield: Annotated[
             str | None,
             Field(default=None, description="Field to sort by."),
@@ -182,11 +162,10 @@ def register_discovery_tools(mcp, config: ZabbixConfig):
             search: Dictionary with search criteria like {'name': 'LAN'}.
             filter_params: Additional filter parameters for advanced filtering.
             limit: Maximum number of results to return (default 100). Set higher for more results.
-            offset: Number of results to skip for pagination. Use with sortfield.
 
         Returns:
             dict: Contains 'drules' list with network discovery rule objects, 'count',
-                  and pagination metadata ('limit', 'offset').
+                  and the applied 'limit'.
                   Each rule includes:
                   - druleid: Discovery rule ID
                   - name: Rule name
@@ -211,8 +190,6 @@ def register_discovery_tools(mcp, config: ZabbixConfig):
                 params["filter"] = filter_params
 
             params["limit"] = limit
-            if offset > 0:
-                params["offset"] = offset
 
             async with ZabbixClient(config) as api:
                 result = await api.drule.get(**params)
@@ -220,7 +197,6 @@ def register_discovery_tools(mcp, config: ZabbixConfig):
                     "drules": result,
                     "count": int(result) if count_output else len(result),
                     "limit": limit,
-                    "offset": offset,
                 }
         except Exception as e:
             await ctx.error(f"Error retrieving network discovery rules: {e!s}")
