@@ -157,7 +157,7 @@ def register_configuration_tools(mcp, config: ZabbixConfig):
             params: dict[str, Any] = {"format": format_type, "source": content}
 
             async with ZabbixClient(config) as api:
-                result = await api.configuration.import_config(**params)
+                result = await api.configuration.import_(**params)
                 return {"result": result, "success": True}
         except Exception as e:
             await ctx.error(f"Error importing configuration: {e!s}")
