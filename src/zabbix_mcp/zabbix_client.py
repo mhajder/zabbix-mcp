@@ -10,6 +10,7 @@ from zabbix_utils.types import APIVersion
 
 from zabbix_mcp.models import TransportConfig
 from zabbix_mcp.models import ZabbixConfig
+from zabbix_mcp.retry import build_session
 from zabbix_mcp.utils import parse_bool
 
 logger = logging.getLogger(__name__)
@@ -24,7 +25,6 @@ class ZabbixClient:
 
     _instance: "ZabbixClient | None" = None
     _initialized: bool = False
-    _api: AsyncZabbixAPI | None = None
     _task_apis: dict
 
     def __new__(cls, config: ZabbixConfig | None = None):  # noqa: ARG004
@@ -45,23 +45,35 @@ class ZabbixClient:
 
     async def __aenter__(self) -> Any:
         """Create a fresh, authenticated API instance for the current task."""
-        api = await self._create_fresh_api()
+        api, session = await self._create_fresh_api()
         task = asyncio.current_task()
         key = id(task) if task is not None else 0
-        self._task_apis[key] = api
+        self._task_apis[key] = (api, session)
         return api
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         """Log out and discard the API instance belonging to the current task."""
         task = asyncio.current_task()
         key = id(task) if task is not None else 0
-        api = self._task_apis.pop(key, None)
-        if api is not None:
-            try:
-                await api.logout()
-            except Exception:
-                logger.debug("Ignoring exception while closing Zabbix API session")
+        entry = self._task_apis.pop(key, None)
+        if entry is not None:
+            await self._discard(*entry)
         return False
+
+    @staticmethod
+    async def _discard(api: Any, session: Any) -> None:
+        """Log out and close the session backing an API instance.
+
+        Args:
+            api: The API instance to log out.
+            session: Its HTTP session, which we own and must close ourselves.
+        """
+        try:
+            await api.logout()
+        except Exception:
+            logger.debug("Ignoring exception while closing Zabbix API session")
+        finally:
+            await session.close()
 
     async def _seed_api_version(self) -> None:
         """Resolve the Zabbix API version once, without blocking the event loop.
@@ -112,42 +124,39 @@ class ZabbixClient:
             "Creating fresh Zabbix API connection to %s", self.config.zabbix_url
         )
         await self._seed_api_version()
-        api: Any = AsyncZabbixAPI(
-            url=self.config.zabbix_url,
-            token=self.config.token,
-            user=self.config.user,
-            password=self.config.password,
-            validate_certs=self.config.verify_ssl,
-            timeout=self.config.timeout,
-            skip_version_check=self.config.skip_version_check,
-        )
-        await api.login()
-        return api
-
-    async def get_api(self) -> Any:
-        """Return a fresh authenticated API instance (convenience for direct callers).
-
-        Returns:
-            AsyncZabbixAPI: Authenticated API instance ready for requests.
-        """
-        return await self._create_fresh_api()
+        # Supplying the session makes retries possible and hands us its
+        # lifecycle: zabbix_utils only closes sessions it created itself.
+        session = build_session(self.config.verify_ssl)
+        try:
+            api: Any = AsyncZabbixAPI(
+                url=self.config.zabbix_url,
+                token=self.config.token,
+                user=self.config.user,
+                password=self.config.password,
+                validate_certs=self.config.verify_ssl,
+                timeout=self.config.timeout,
+                skip_version_check=self.config.skip_version_check,
+                client_session=session,
+            )
+            await api.login()
+        except BaseException:
+            await session.close()
+            raise
+        return api, session
 
     async def close(self):
         """Close any lingering task-keyed API sessions."""
-        for api in list(self._task_apis.values()):
-            try:
-                await api.logout()
-            except Exception:
-                logger.debug("Ignoring exception while closing Zabbix API session")
+        for api, session in list(self._task_apis.values()):
+            await self._discard(api, session)
         self._task_apis.clear()
-        self._api = None
 
     @property
     def api(self) -> AsyncZabbixAPI | None:
         """Return the task-local API instance, or None outside a context manager."""
         task = asyncio.current_task()
         key = id(task) if task is not None else 0
-        return self._task_apis.get(key, self._api)
+        entry = self._task_apis.get(key)
+        return entry[0] if entry else None
 
 
 def get_zabbix_config_from_env() -> ZabbixConfig:

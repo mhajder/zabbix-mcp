@@ -29,6 +29,13 @@ def describe(exc: Exception) -> str:
         str: Human-readable description, prefixed with the API error code when
             the exception carries one.
     """
+    # aiohttp's ClientResponseError exposes .code as a deprecated alias of
+    # .status, so check for an HTTP status first or a 500 gets reported as if it
+    # were a JSON-RPC error code.
+    status = getattr(exc, "status", None)
+    if status is not None:
+        return f"HTTP {status} from the Zabbix server: {getattr(exc, 'message', '') or exc}"
+
     code = getattr(exc, "code", None)
     if code is None:
         # Some exceptions carry no message at all (asyncio.TimeoutError), so the
