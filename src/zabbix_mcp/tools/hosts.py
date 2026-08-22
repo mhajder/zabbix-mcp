@@ -95,7 +95,7 @@ def register_hosts_tools(mcp, config: ZabbixConfig):
             bool,
             Field(
                 default=False,
-                description="If true, include the host groups each host belongs to in the response (selectGroups=extend).",
+                description="If true, include the host groups each host belongs to in the response (selectHostGroups=extend).",
             ),
         ] = False,
         select_templates: Annotated[
@@ -157,7 +157,7 @@ def register_hosts_tools(mcp, config: ZabbixConfig):
             output: 'extend' returns all fields, or specify specific field names.
             limit: Page size (default 100).
             offset: Number of matching hosts to skip, for paging.
-            select_groups: If true, each host includes a 'groups' list with its host groups.
+            select_groups: If true, each host includes a 'hostgroups' list with its host groups.
             select_templates: If true, each host includes a 'parentTemplates' list with linked templates.
             select_interfaces: If true, each host includes an 'interfaces' list.
             select_tags: If true, each host includes a 'tags' list.
@@ -204,7 +204,7 @@ def register_hosts_tools(mcp, config: ZabbixConfig):
 
             shape: dict[str, Any] = {"output": output}
             if select_groups:
-                shape["selectGroups"] = "extend"
+                shape["selectHostGroups"] = "extend"
             if select_templates:
                 shape["selectParentTemplates"] = "extend"
             if select_interfaces:

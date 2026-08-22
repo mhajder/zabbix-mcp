@@ -59,7 +59,7 @@ def register_templates_tools(mcp, config: ZabbixConfig):
             bool,
             Field(
                 default=False,
-                description="If true, include the template groups the templates belong to (selectGroups=extend).",
+                description="If true, include the template groups the templates belong to (selectTemplateGroups=extend).",
             ),
         ] = False,
         select_hosts: Annotated[
@@ -122,7 +122,7 @@ def register_templates_tools(mcp, config: ZabbixConfig):
             template_name_contains: Shortcut to search for templates by name (adds to 'search').
             limit: Maximum number of results to return (default 100). Set higher for more results.
             offset: Number of matching records to skip, for paging.
-            select_groups: If true, each template includes a 'groups' list with its template groups.
+            select_groups: If true, each template includes a 'templategroups' list with its template groups.
             select_hosts: If true, each template includes a 'hosts' list with linked hosts.
             select_templates: If true, each template includes a 'templates' list with linked templates.
             select_macros: If true, each template includes a 'macros' list.
@@ -158,7 +158,7 @@ def register_templates_tools(mcp, config: ZabbixConfig):
             if _search:
                 filters["search"] = _search
             if select_groups:
-                shape["selectGroups"] = "extend"
+                shape["selectTemplateGroups"] = "extend"
             if select_hosts:
                 shape["selectHosts"] = "extend"
             if select_templates:
