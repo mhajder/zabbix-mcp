@@ -136,14 +136,6 @@ def register_history_tools(mcp, config: ZabbixConfig):
                 ge=1,
             ),
         ] = 100,
-        sortfield: Annotated[
-            str | None,
-            Field(default=None, description="Field to sort by."),
-        ] = None,
-        sortorder: Annotated[
-            str,
-            Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
-        ] = "ASC",
         count_output: Annotated[
             bool,
             Field(
@@ -178,6 +170,8 @@ def register_history_tools(mcp, config: ZabbixConfig):
 
         Note: Trends are hourly aggregates. For finer-grained data, use history_get.
               Trends are kept for longer periods than raw history for space efficiency.
+              trend.get accepts no sorting parameters - narrow the range with time_from
+              and time_till instead.
         """
         try:
             await ctx.info("Retrieving trends...")
@@ -188,10 +182,6 @@ def register_history_tools(mcp, config: ZabbixConfig):
                 params["time_till"] = time_till
             params["limit"] = limit
 
-            if sortfield:
-                params["sortfield"] = sortfield
-            if sortorder:
-                params["sortorder"] = sortorder
             if count_output:
                 params["countOutput"] = True
 
