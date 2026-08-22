@@ -252,7 +252,7 @@ def register_hosts_tools(mcp, config: ZabbixConfig):
             dict[str, Any] | None,
             Field(
                 default=None,
-                description="Raw params dict for bulk operations. If provided, individual parameters are ignored.",
+                description="Raw host.create params, for fields the arguments below do not cover. Describes a single host, not a batch. If provided, individual parameters are ignored.",
             ),
         ] = None,
         host: Annotated[
@@ -309,6 +309,17 @@ def register_hosts_tools(mcp, config: ZabbixConfig):
             # Use custom params dict if provided, otherwise build from individual parameters
             if params is None:
                 await ctx.info(f"Creating host '{host}'...")
+                # Zabbix reports a missing host or groups as a type error on the
+                # null we would otherwise send, which says nothing useful.
+                if not host:
+                    raise ValueError(
+                        "'host' is required - pass the technical name of the host."
+                    )
+                if not groups:
+                    raise ValueError(
+                        "'groups' is required - every host must belong to at least one "
+                        "host group, e.g. [{'groupid': '4'}]. Find ids with hostgroup_get."
+                    )
                 params = {"host": host, "groups": groups, "status": status}
                 if interfaces:
                     params["interfaces"] = interfaces
