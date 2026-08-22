@@ -14,6 +14,9 @@ from zabbix_mcp.tools.pagination import fetch_page
 from zabbix_mcp.tools.pagination import fetch_total
 from zabbix_mcp.zabbix_client import ZabbixClient
 
+# event.acknowledge bit that makes Zabbix record the message text.
+_ADD_MESSAGE = 4
+
 
 def register_problems_tools(mcp, config: ZabbixConfig):
     """Register Zabbix problems tools with the MCP server"""
@@ -414,8 +417,9 @@ def register_problems_tools(mcp, config: ZabbixConfig):
                    - 32 = Suppress the event
                    - 64 = Unsuppress the event
                    Default is 2 (acknowledge). Example: 6 acknowledges and adds a message.
-            message: Message to add to the event. Zabbix requires the 'add message' flag (4)
-                     to be included in 'action' for the message to be accepted.
+            message: Message to add to the event. The 'add message' flag (4) is added to
+                     'action' automatically when this is set - Zabbix otherwise accepts
+                     the call and stores an empty message, losing the text silently.
 
         Returns:
             dict: Contains 'success' flag and may include event IDs that were successfully acknowledged.
@@ -427,6 +431,10 @@ def register_problems_tools(mcp, config: ZabbixConfig):
             await ctx.info(f"Acknowledging events: {eventids}...")
             params: dict[str, Any] = {"eventids": eventids, "action": action}
             if message:
+                # Zabbix accepts a message without the 'add message' flag and
+                # then stores it as empty, so set the bit rather than let the
+                # caller's text disappear without any error.
+                params["action"] = action | _ADD_MESSAGE
                 params["message"] = message
 
             async with ZabbixClient(config) as api:
