@@ -9,6 +9,8 @@ from fastmcp import Context
 from pydantic import Field
 
 from zabbix_mcp.models import ZabbixConfig
+from zabbix_mcp.tools.pagination import fetch_page
+from zabbix_mcp.tools.pagination import fetch_total
 from zabbix_mcp.zabbix_client import ZabbixClient
 
 
@@ -77,10 +79,18 @@ def register_hosts_tools(mcp, config: ZabbixConfig):
             int,
             Field(
                 default=100,
-                description="Maximum number of results to return. Default is 100.",
+                description="Page size - maximum number of results to return. Default is 100.",
                 ge=1,
             ),
         ] = 100,
+        offset: Annotated[
+            int,
+            Field(
+                default=0,
+                description="Number of matching hosts to skip. Use with 'limit' to page through results; check 'has_more' and 'total' in the response.",
+                ge=0,
+            ),
+        ] = 0,
         select_groups: Annotated[
             bool,
             Field(
@@ -110,9 +120,12 @@ def register_hosts_tools(mcp, config: ZabbixConfig):
             ),
         ] = False,
         sortfield: Annotated[
-            str | None,
-            Field(default=None, description="Field to sort by."),
-        ] = None,
+            str,
+            Field(
+                default="hostid",
+                description="Field to sort by - 'hostid', 'host', 'name' or 'status'. A deterministic sort is required for paging to be consistent.",
+            ),
+        ] = "hostid",
         sortorder: Annotated[
             str,
             Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
@@ -142,62 +155,83 @@ def register_hosts_tools(mcp, config: ZabbixConfig):
             hostname_contains: Shortcut to search for hosts by name (adds to 'search').
             status: Shortcut to filter by status (0=enabled, 1=disabled) (adds to 'filter_params').
             output: 'extend' returns all fields, or specify specific field names.
-            limit: Maximum number of results to return (default 100). Set higher for more results.
+            limit: Page size (default 100).
+            offset: Number of matching hosts to skip, for paging.
             select_groups: If true, each host includes a 'groups' list with its host groups.
             select_templates: If true, each host includes a 'parentTemplates' list with linked templates.
             select_interfaces: If true, each host includes an 'interfaces' list.
             select_tags: If true, each host includes a 'tags' list.
 
         Returns:
-            dict: Contains 'hosts' list with host objects, 'count' of results returned,
-                  and the applied 'limit'.
+            dict: Contains 'hosts' list with host objects, 'count' of hosts on this page,
+                  'total' matching hosts, the applied 'limit' and 'offset', and 'has_more'
+                  indicating whether further pages exist.
                   Each host contains: hostid, host (technical name), name (visible name),
                   status, groups, interfaces, and other host properties.
+                  With count_output=True, only 'total' is returned.
+
+        Note: The Zabbix API itself has no offset parameter, so paging is performed by this
+              server: it counts the matches, reads the ids for the requested slice, then
+              fetches those hosts. Keep 'sortfield' stable while paging through a result set.
         """
         try:
             await ctx.info("Retrieving hosts...")
-            params: dict[str, Any] = {"output": output}
-            if sortfield:
-                params["sortfield"] = sortfield
-            if sortorder:
-                params["sortorder"] = sortorder
-            if count_output:
-                params["countOutput"] = True
-
+            # Sorting is kept out of 'filters' because Zabbix rejects
+            # countOutput combined with sortfield.
+            sort: dict[str, Any] = {
+                "sortfield": sortfield,
+                "sortorder": sortorder,
+            }
+            filters: dict[str, Any] = {}
             if hostids:
-                params["hostids"] = hostids
+                filters["hostids"] = hostids
             if groupids:
-                params["groupids"] = groupids
+                filters["groupids"] = groupids
             if templateids:
-                params["templateids"] = templateids
+                filters["templateids"] = templateids
             if proxyids:
-                params["proxyids"] = proxyids
+                filters["proxyids"] = proxyids
             _search = dict(search) if search is not None else {}
             if hostname_contains is not None:
                 _search["host"] = hostname_contains
             if _search:
-                params["search"] = _search
+                filters["search"] = _search
             _filter = dict(filter_params) if filter_params is not None else {}
             if status is not None:
                 _filter["status"] = status
             if _filter:
-                params["filter"] = _filter
-            params["limit"] = limit
+                filters["filter"] = _filter
+
+            shape: dict[str, Any] = {"output": output}
             if select_groups:
-                params["selectGroups"] = "extend"
+                shape["selectGroups"] = "extend"
             if select_templates:
-                params["selectParentTemplates"] = "extend"
+                shape["selectParentTemplates"] = "extend"
             if select_interfaces:
-                params["selectInterfaces"] = "extend"
+                shape["selectInterfaces"] = "extend"
             if select_tags:
-                params["selectTags"] = "extend"
+                shape["selectTags"] = "extend"
 
             async with ZabbixClient(config) as api:
-                result = await api.host.get(**params)
+                if count_output:
+                    return {"total": await fetch_total(api.host, filters)}
+
+                hosts, total = await fetch_page(
+                    api.host,
+                    filters=filters,
+                    shape=shape,
+                    sort=sort,
+                    id_field="hostid",
+                    limit=limit,
+                    offset=offset,
+                )
                 return {
-                    "hosts": result,
-                    "count": int(result) if count_output else len(result),
+                    "hosts": hosts,
+                    "count": len(hosts),
+                    "total": total,
                     "limit": limit,
+                    "offset": offset,
+                    "has_more": offset + len(hosts) < total,
                 }
 
         except Exception as e:
