@@ -14,6 +14,36 @@ from zabbix_mcp.tools.pagination import fetch_total
 from zabbix_mcp.zabbix_client import ZabbixClient
 
 
+async def _detect_value_type(api: Any, itemids: list[str]) -> int:
+    """Look up which history table the given items store their values in.
+
+    history.get reads one storage type at a time and returns an empty list -
+    not an error - when it does not match the item, which makes a wrong guess
+    look like "no data".
+
+    Args:
+        api: Authenticated Zabbix API instance.
+        itemids: Items the caller wants history for.
+
+    Returns:
+        int: The shared value_type of the items.
+
+    Raises:
+        ValueError: If the items do not exist, or mix value types, in which case
+            no single history table can serve them all.
+    """
+    items = await api.item.get(itemids=itemids, output=["itemid", "value_type"])
+    value_types = {int(item["value_type"]) for item in items}
+    if not value_types:
+        raise ValueError(f"No items found for itemids {itemids}.")
+    if len(value_types) > 1:
+        raise ValueError(
+            f"Items {itemids} mix value types {sorted(value_types)}; history.get reads "
+            "one type at a time. Request them separately, or pass 'history' explicitly."
+        )
+    return value_types.pop()
+
+
 def register_history_tools(mcp, config: ZabbixConfig):
     """Register Zabbix history tools with the MCP server"""
 
@@ -31,12 +61,12 @@ def register_history_tools(mcp, config: ZabbixConfig):
             list[str], Field(description="Item IDs to get history for.")
         ],
         history: Annotated[
-            int,
+            int | None,
             Field(
-                default=0,
-                description="History type: 0=float, 1=char, 2=log, 3=unsigned, 4=text.",
+                default=None,
+                description="Storage type to read: 0=float, 1=char, 2=log, 3=unsigned, 4=text. Must match the items' value_type or Zabbix returns nothing. Detected from the items when omitted.",
             ),
-        ] = 0,
+        ] = None,
         time_from: Annotated[int | None, Field(default=None)] = None,
         time_till: Annotated[int | None, Field(default=None)] = None,
         limit: Annotated[
@@ -65,8 +95,11 @@ def register_history_tools(mcp, config: ZabbixConfig):
 
         Args:
             itemids: List of item IDs to get history for. Required. Find items with item_get.
-            history: Data type of history to retrieve:
-                    - 0 = Float numeric values (default, for most metrics)
+            history: Which history table to read. Zabbix stores each item's values in the
+                    table matching its value_type, and reading the wrong one returns an
+                    empty list rather than an error - so this must agree with the items.
+                    Leave it unset and the value_type is looked up from the items instead.
+                    - 0 = Float numeric values
                     - 1 = Character string values
                     - 2 = Log data
                     - 3 = Unsigned numeric values
@@ -100,6 +133,9 @@ def register_history_tools(mcp, config: ZabbixConfig):
                 filters["time_till"] = time_till
 
             async with ZabbixClient(config) as api:
+                if history is None:
+                    filters["history"] = await _detect_value_type(api, itemids)
+
                 if count_output:
                     return {"total": await fetch_total(api.history, filters)}
 
