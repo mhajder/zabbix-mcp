@@ -1,3 +1,38 @@
+## v0.6.0 (2026-08-22)
+
+### Feat
+
+- **client**: retry transient Zabbix API failures
+- **items**: expose interfaceid on item_create
+- **hosts**: add working offset pagination to host_get
+
+### Fix
+
+- **users**: set a role when creating a user
+- **problems**: set the add-message flag when a message is given
+- **tools**: reject empty id lists before they reach Zabbix
+- **history**: detect the item value type instead of defaulting to float
+- **server**: require an explicit scheme on ZABBIX_URL
+- **users**: replace the removed user type with roleid
+- **configuration**: require ids for configuration_export
+- **hosts**: validate host and groups before calling host.create
+- **maintenance**: always send the required timeperiods
+- **configuration**: send the required rules to configuration.import
+- **pagination**: keep paging working when output omits the id field
+- **tools**: raise ToolError instead of returning an error dict
+- **tools**: use selectHostGroups and selectTemplateGroups
+- **tools**: route all _get tools through fetch_page/fetch_total
+- **history**: drop sortfield/sortorder from trend_get
+- **tools**: drop unsupported offset parameter from all _get tools
+- **problems**: default event_acknowledge action to acknowledge, not close
+- **configuration**: call configuration.import via import_ attribute
+- **server**: resolve LOG_LEVEL case-insensitively
+- **config**: treat blank env vars as unset
+
+### Perf
+
+- **client**: resolve the Zabbix API version once, off the event loop
+
 ## v0.5.3 (2026-07-14)
 
 ### Fix
