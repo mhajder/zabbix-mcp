@@ -202,11 +202,11 @@ def register_users_tools(mcp, config: ZabbixConfig):
         name: Annotated[str | None, Field(default=None)] = None,
         surname: Annotated[str | None, Field(default=None)] = None,
         passwd: Annotated[str | None, Field(default=None)] = None,
-        type_: Annotated[
-            int | None,
+        roleid: Annotated[
+            str | None,
             Field(
                 default=None,
-                description="User type: 1=Zabbix user, 2=Zabbix admin, 3=Zabbix super admin.",
+                description="ID of the user's role, which is what grants permissions. Roles are objects in Zabbix 5.2+; the old numeric user 'type' no longer exists.",
             ),
         ] = None,
     ) -> dict:
@@ -214,7 +214,7 @@ def register_users_tools(mcp, config: ZabbixConfig):
         Update an existing user in Zabbix.
 
         Modifies properties of an existing user account. You can change name, surname,
-        password, or user type. Only specify the fields you want to change.
+        password, or role. Only specify the fields you want to change.
 
         Args:
             userid: ID of the user to update (required). Find it with user_get.
@@ -222,7 +222,10 @@ def register_users_tools(mcp, config: ZabbixConfig):
             name: New first name.
             surname: New last name.
             passwd: New password.
-            type_: New user type (1=user, 2=admin, 3=super admin).
+            roleid: New role for the user. Zabbix 5.2 replaced the numeric user type
+                    (1=user, 2=admin, 3=super admin) with role objects, and the default
+                    roles keep those ids - 'User role' is 1, 'Admin role' 2, 'Super admin
+                    role' 3. Confirm against your instance with role.get.
 
         Returns:
             dict: Contains 'userids' list with updated user IDs and 'success' flag.
@@ -238,8 +241,8 @@ def register_users_tools(mcp, config: ZabbixConfig):
                 params["surname"] = surname
             if passwd is not None:
                 params["passwd"] = passwd
-            if type_ is not None:
-                params["type"] = type_
+            if roleid is not None:
+                params["roleid"] = roleid
 
             async with ZabbixClient(config) as api:
                 result = await api.user.update(**params)
