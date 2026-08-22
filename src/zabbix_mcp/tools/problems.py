@@ -353,7 +353,7 @@ def register_problems_tools(mcp, config: ZabbixConfig):
         tags={"zabbix", "event"},
         annotations={
             "readOnlyHint": False,
-            "destructiveHint": False,
+            "destructiveHint": True,
             "idempotentHint": True,
         },
     )
@@ -362,8 +362,11 @@ def register_problems_tools(mcp, config: ZabbixConfig):
         eventids: Annotated[list[str], Field(description="Event IDs to acknowledge.")],
         action: Annotated[
             int,
-            Field(default=1, description="Action: 1=ack, 2=close, 4=add message, etc."),
-        ] = 1,
+            Field(
+                default=2,
+                description="Bitmask: 1=close problem, 2=acknowledge, 4=add message, 8=change severity, 16=unacknowledge, 32=suppress, 64=unsuppress.",
+            ),
+        ] = 2,
         message: Annotated[str | None, Field(default=None)] = None,
     ) -> dict:
         """
@@ -374,12 +377,17 @@ def register_problems_tools(mcp, config: ZabbixConfig):
 
         Args:
             eventids: List of event IDs to acknowledge. Find them with event_get.
-            action: Action to perform on the events:
-                   - 1 = Acknowledge the event (most common)
-                   - 2 = Close the event (if resolved)
+            action: Bitmask of operations to apply. Sum the flags to combine them:
+                   - 1 = Close the problem (only if the trigger allows manual close)
+                   - 2 = Acknowledge the event (default, most common)
                    - 4 = Add message to event
-                   Default is 1 (acknowledge).
-            message: Optional message to add when acknowledging (e.g., "Working on this", "Will restart service").
+                   - 8 = Change severity
+                   - 16 = Unacknowledge the event
+                   - 32 = Suppress the event
+                   - 64 = Unsuppress the event
+                   Default is 2 (acknowledge). Example: 6 acknowledges and adds a message.
+            message: Message to add to the event. Zabbix requires the 'add message' flag (4)
+                     to be included in 'action' for the message to be accepted.
 
         Returns:
             dict: Contains 'success' flag and may include event IDs that were successfully acknowledged.
