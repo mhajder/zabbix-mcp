@@ -9,6 +9,7 @@ import logging
 import os
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version
+from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 from fastmcp import FastMCP
@@ -155,6 +156,22 @@ def main():
     if not ZABBIX_CONFIG.zabbix_url:
         logger.error("Missing required Zabbix URL (ZABBIX_URL). Check your .env file.")
         raise SystemExit(1)
+
+    # zabbix_utils silently prepends http:// to a URL with no scheme, which would
+    # put the API token on the wire in cleartext without anyone noticing.
+    scheme = urlparse(ZABBIX_CONFIG.zabbix_url).scheme.lower()
+    if scheme not in {"http", "https"}:
+        logger.error(
+            "ZABBIX_URL must start with https:// or http:// (got %r). Without a scheme "
+            "the client defaults to plaintext http://, sending your API token in the clear.",
+            ZABBIX_CONFIG.zabbix_url,
+        )
+        raise SystemExit(1)
+    if scheme == "http":
+        logger.warning(
+            "ZABBIX_URL uses plaintext http://. The API token is sent in the "
+            "Authorization header on every request - use https:// outside a trusted network."
+        )
 
     if not has_token and not has_user_pass:
         logger.error(
