@@ -148,28 +148,39 @@ def register_users_tools(mcp, config: ZabbixConfig):
         usrgrps: Annotated[
             list[dict[str, str]], Field(description="User groups [{'usrgrpid': '1'}].")
         ],
+        roleid: Annotated[
+            str,
+            Field(
+                default="1",
+                description="ID of the user's role, which is what grants permissions. Defaults to '1' (User role); a user created without one gets roleid 0 and cannot log in.",
+            ),
+        ] = "1",
         name: Annotated[str | None, Field(default=None)] = None,
         surname: Annotated[str | None, Field(default=None)] = None,
     ) -> dict:
         """
         Create a new user in Zabbix.
 
-        Creates a new user account with specified credentials and group membership. New users
-        inherit permissions from their assigned user groups.
+        Creates a new user account with specified credentials, role and group membership.
 
         Args:
             username: Login username. Must be unique and alphanumeric.
-            passwd: Password for the user account. Should follow security policy (min length, complexity).
+            passwd: Password for the user account. Must meet the instance's password policy,
+                    and Zabbix rejects passwords containing the username, name or surname.
             usrgrps: List of user group assignments in format [{'usrgrpid': 'group_id'}, ...].
-                    Users inherit permissions from their groups. At least one group is required.
+                    Groups control which hosts the user can see. At least one is required.
+            roleid: The role granting the user's permissions. Zabbix accepts user.create
+                    without it but then stores roleid 0, leaving an account that cannot log
+                    in, so this defaults to '1'. The default roles keep the old user-type
+                    numbering - 'User role' is 1, 'Admin role' 2, 'Super admin role' 3.
             name: User's first name (optional).
             surname: User's last name (optional).
 
         Returns:
             dict: Contains 'userids' list with newly created user ID(s) and 'success' flag.
 
-        Note: New users receive default permissions from their assigned groups. Change passwords
-              through user_update if needed. Username cannot be changed after creation.
+        Note: Groups and role are separate concerns - groups scope what is visible, the role
+              scopes what may be done. Change either later with user_update.
         """
         try:
             await ctx.info(f"Creating user '{username}'...")
@@ -177,6 +188,7 @@ def register_users_tools(mcp, config: ZabbixConfig):
                 "username": username,
                 "passwd": passwd,
                 "usrgrps": usrgrps,
+                "roleid": roleid,
             }
             if name:
                 params["name"] = name
