@@ -9,6 +9,8 @@ from fastmcp import Context
 from pydantic import Field
 
 from zabbix_mcp.models import ZabbixConfig
+from zabbix_mcp.tools.pagination import fetch_page
+from zabbix_mcp.tools.pagination import fetch_total
 from zabbix_mcp.zabbix_client import ZabbixClient
 
 
@@ -54,6 +56,14 @@ def register_items_tools(mcp, config: ZabbixConfig):
                 ge=1,
             ),
         ] = 100,
+        offset: Annotated[
+            int,
+            Field(
+                default=0,
+                description="Number of matching records to skip. Use with 'limit' to page through results; check 'has_more' and 'total' in the response.",
+                ge=0,
+            ),
+        ] = 0,
         select_hosts: Annotated[
             bool,
             Field(
@@ -76,9 +86,12 @@ def register_items_tools(mcp, config: ZabbixConfig):
             ),
         ] = False,
         sortfield: Annotated[
-            str | None,
-            Field(default=None, description="Field to sort by."),
-        ] = None,
+            str,
+            Field(
+                default="itemid",
+                description="Field to sort by. A deterministic sort is required for paging to be consistent.",
+            ),
+        ] = "itemid",
         sortorder: Annotated[
             str,
             Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
@@ -107,13 +120,15 @@ def register_items_tools(mcp, config: ZabbixConfig):
             item_name_contains: Shortcut to search for items by name (adds to 'search').
             item_key_contains: Shortcut to search for items by key (adds to 'search').
             limit: Maximum number of results to return (default 100). Set higher for more results.
+            offset: Number of matching records to skip, for paging.
             select_hosts: If true, include the hosts each item belongs to.
             select_tags: If true, include the tags for each item.
             select_triggers: If true, include the triggers associated with each item.
 
         Returns:
             dict: Contains 'items' list with item objects, 'count' of results returned,
-                  and the applied 'limit'.
+                  'total' matching records, the applied 'limit' and 'offset', and
+                  'has_more' indicating whether further pages exist.
                   Each item includes:
                   - itemid: Unique item ID
                   - name: Item name (e.g., 'CPU load average')
@@ -127,44 +142,55 @@ def register_items_tools(mcp, config: ZabbixConfig):
         """
         try:
             await ctx.info("Retrieving items...")
-            params: dict[str, Any] = {"output": output}
-            if sortfield:
-                params["sortfield"] = sortfield
-            if sortorder:
-                params["sortorder"] = sortorder
-            if count_output:
-                params["countOutput"] = True
+            # Sorting is kept out of 'filters' because Zabbix rejects
+            # countOutput combined with sortfield.
+            sort: dict[str, Any] = {"sortfield": sortfield, "sortorder": sortorder}
+            filters: dict[str, Any] = {}
+            shape: dict[str, Any] = {"output": output}
             if itemids:
-                params["itemids"] = itemids
+                filters["itemids"] = itemids
             if hostids:
-                params["hostids"] = hostids
+                filters["hostids"] = hostids
             if groupids:
-                params["groupids"] = groupids
+                filters["groupids"] = groupids
             if templateids:
-                params["templateids"] = templateids
+                filters["templateids"] = templateids
             _search = dict(search) if search is not None else {}
             if item_name_contains is not None:
                 _search["name"] = item_name_contains
             if item_key_contains is not None:
                 _search["key_"] = item_key_contains
             if _search:
-                params["search"] = _search
+                filters["search"] = _search
             if filter_params:
-                params["filter"] = dict(filter_params)
-            params["limit"] = limit
+                filters["filter"] = dict(filter_params)
             if select_hosts:
-                params["selectHosts"] = "extend"
+                shape["selectHosts"] = "extend"
             if select_tags:
-                params["selectTags"] = "extend"
+                shape["selectTags"] = "extend"
             if select_triggers:
-                params["selectTriggers"] = "extend"
+                shape["selectTriggers"] = "extend"
 
             async with ZabbixClient(config) as api:
-                result = await api.item.get(**params)
+                if count_output:
+                    return {"total": await fetch_total(api.item, filters)}
+
+                rows, total = await fetch_page(
+                    api.item,
+                    filters=filters,
+                    shape=shape,
+                    sort=sort,
+                    id_field="itemid",
+                    limit=limit,
+                    offset=offset,
+                )
                 return {
-                    "items": result,
-                    "count": int(result) if count_output else len(result),
+                    "items": rows,
+                    "count": len(rows),
+                    "total": total,
                     "limit": limit,
+                    "offset": offset,
+                    "has_more": offset + len(rows) < total,
                 }
         except Exception as e:
             await ctx.error(f"Error retrieving items: {e!s}")
@@ -375,10 +401,21 @@ def register_items_tools(mcp, config: ZabbixConfig):
                 ge=1,
             ),
         ] = 100,
+        offset: Annotated[
+            int,
+            Field(
+                default=0,
+                description="Number of matching records to skip. Use with 'limit' to page through results; check 'has_more' and 'total' in the response.",
+                ge=0,
+            ),
+        ] = 0,
         sortfield: Annotated[
-            str | None,
-            Field(default=None, description="Field to sort by."),
-        ] = None,
+            str,
+            Field(
+                default="itemid",
+                description="Field to sort by. A deterministic sort is required for paging to be consistent.",
+            ),
+        ] = "itemid",
         sortorder: Annotated[
             str,
             Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
@@ -404,10 +441,12 @@ def register_items_tools(mcp, config: ZabbixConfig):
             search: Dictionary with search criteria like {'name': 'CPU'}.
             filter_params: Additional filter parameters for advanced filtering.
             limit: Maximum number of results to return (default 100). Set higher for more results.
+            offset: Number of matching records to skip, for paging.
 
         Returns:
             dict: Contains 'itemprototypes' list with item prototype objects, 'count',
-                  and the applied 'limit'.
+                  'total' matching records, the applied 'limit' and 'offset', and
+                  'has_more' indicating whether further pages exist.
                   Each prototype includes:
                   - itemid: Item prototype ID
                   - name: Item prototype name
@@ -418,32 +457,42 @@ def register_items_tools(mcp, config: ZabbixConfig):
         """
         try:
             await ctx.info("Retrieving item prototypes...")
-            params: dict[str, Any] = {"output": output}
-            if sortfield:
-                params["sortfield"] = sortfield
-            if sortorder:
-                params["sortorder"] = sortorder
-            if count_output:
-                params["countOutput"] = True
+            # Sorting is kept out of 'filters' because Zabbix rejects
+            # countOutput combined with sortfield.
+            sort: dict[str, Any] = {"sortfield": sortfield, "sortorder": sortorder}
+            filters: dict[str, Any] = {}
+            shape: dict[str, Any] = {"output": output}
             if itemids:
-                params["itemids"] = itemids
+                filters["itemids"] = itemids
             if hostids:
-                params["hostids"] = hostids
+                filters["hostids"] = hostids
             if discoveryids:
-                params["discoveryids"] = discoveryids
+                filters["discoveryids"] = discoveryids
             if search:
-                params["search"] = search
+                filters["search"] = search
             if filter_params:
-                params["filter"] = filter_params
-
-            params["limit"] = limit
+                filters["filter"] = filter_params
 
             async with ZabbixClient(config) as api:
-                result = await api.itemprototype.get(**params)
+                if count_output:
+                    return {"total": await fetch_total(api.itemprototype, filters)}
+
+                rows, total = await fetch_page(
+                    api.itemprototype,
+                    filters=filters,
+                    shape=shape,
+                    sort=sort,
+                    id_field="itemid",
+                    limit=limit,
+                    offset=offset,
+                )
                 return {
-                    "itemprototypes": result,
-                    "count": int(result) if count_output else len(result),
+                    "itemprototypes": rows,
+                    "count": len(rows),
+                    "total": total,
                     "limit": limit,
+                    "offset": offset,
+                    "has_more": offset + len(rows) < total,
                 }
         except Exception as e:
             await ctx.error(f"Error retrieving item prototypes: {e!s}")

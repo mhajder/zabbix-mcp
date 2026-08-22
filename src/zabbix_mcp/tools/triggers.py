@@ -9,6 +9,8 @@ from fastmcp import Context
 from pydantic import Field
 
 from zabbix_mcp.models import ZabbixConfig
+from zabbix_mcp.tools.pagination import fetch_page
+from zabbix_mcp.tools.pagination import fetch_total
 from zabbix_mcp.zabbix_client import ZabbixClient
 
 
@@ -47,6 +49,14 @@ def register_triggers_tools(mcp, config: ZabbixConfig):
                 ge=1,
             ),
         ] = 100,
+        offset: Annotated[
+            int,
+            Field(
+                default=0,
+                description="Number of matching records to skip. Use with 'limit' to page through results; check 'has_more' and 'total' in the response.",
+                ge=0,
+            ),
+        ] = 0,
         only_true: Annotated[
             bool,
             Field(default=False, description="Only return triggers in problem state."),
@@ -62,9 +72,12 @@ def register_triggers_tools(mcp, config: ZabbixConfig):
             ),
         ] = False,
         sortfield: Annotated[
-            str | None,
-            Field(default=None, description="Field to sort by."),
-        ] = None,
+            str,
+            Field(
+                default="triggerid",
+                description="Field to sort by. A deterministic sort is required for paging to be consistent.",
+            ),
+        ] = "triggerid",
         sortorder: Annotated[
             str,
             Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
@@ -92,6 +105,7 @@ def register_triggers_tools(mcp, config: ZabbixConfig):
             filter_params: Additional filter parameters for advanced filtering.
             description_contains: Shortcut to search for triggers by description (name) (adds to 'search').
             limit: Maximum number of results to return (default 100). Set higher for more results.
+            offset: Number of matching records to skip, for paging.
             only_true: If true, only return triggers currently in problem state.
             min_severity: Minimum severity level (0=Not classified, 1=Information, 2=Warning,
                          3=Average, 4=High, 5=Disaster). Returns triggers of this severity or higher.
@@ -100,7 +114,8 @@ def register_triggers_tools(mcp, config: ZabbixConfig):
 
         Returns:
             dict: Contains 'triggers' list with trigger objects, 'count' of results returned,
-                  and the applied 'limit'.
+                  'total' matching records, the applied 'limit' and 'offset', and
+                  'has_more' indicating whether further pages exist.
                   Each trigger includes:
                   - triggerid: Unique trigger ID
                   - description: Trigger name/description
@@ -113,42 +128,53 @@ def register_triggers_tools(mcp, config: ZabbixConfig):
         """
         try:
             await ctx.info("Retrieving triggers...")
-            params: dict[str, Any] = {"output": output}
-            if sortfield:
-                params["sortfield"] = sortfield
-            if sortorder:
-                params["sortorder"] = sortorder
-            if count_output:
-                params["countOutput"] = True
+            # Sorting is kept out of 'filters' because Zabbix rejects
+            # countOutput combined with sortfield.
+            sort: dict[str, Any] = {"sortfield": sortfield, "sortorder": sortorder}
+            filters: dict[str, Any] = {}
+            shape: dict[str, Any] = {"output": output}
             if triggerids:
-                params["triggerids"] = triggerids
+                filters["triggerids"] = triggerids
             if hostids:
-                params["hostids"] = hostids
+                filters["hostids"] = hostids
             if groupids:
-                params["groupids"] = groupids
+                filters["groupids"] = groupids
             if templateids:
-                params["templateids"] = templateids
+                filters["templateids"] = templateids
             _search = dict(search) if search is not None else {}
             if description_contains is not None:
                 _search["description"] = description_contains
             if _search:
-                params["search"] = _search
+                filters["search"] = _search
             if filter_params:
-                params["filter"] = filter_params
-            params["limit"] = limit
+                filters["filter"] = filter_params
             if only_true:
-                params["only_true"] = only_true
+                filters["only_true"] = only_true
             if min_severity is not None:
-                params["min_severity"] = min_severity
+                filters["min_severity"] = min_severity
             if select_hosts:
-                params["selectHosts"] = "extend"
+                shape["selectHosts"] = "extend"
 
             async with ZabbixClient(config) as api:
-                result = await api.trigger.get(**params)
+                if count_output:
+                    return {"total": await fetch_total(api.trigger, filters)}
+
+                rows, total = await fetch_page(
+                    api.trigger,
+                    filters=filters,
+                    shape=shape,
+                    sort=sort,
+                    id_field="triggerid",
+                    limit=limit,
+                    offset=offset,
+                )
                 return {
-                    "triggers": result,
-                    "count": int(result) if count_output else len(result),
+                    "triggers": rows,
+                    "count": len(rows),
+                    "total": total,
                     "limit": limit,
+                    "offset": offset,
+                    "has_more": offset + len(rows) < total,
                 }
         except Exception as e:
             await ctx.error(f"Error retrieving triggers: {e!s}")

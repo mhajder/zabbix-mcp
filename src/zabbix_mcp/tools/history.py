@@ -9,6 +9,7 @@ from fastmcp import Context
 from pydantic import Field
 
 from zabbix_mcp.models import ZabbixConfig
+from zabbix_mcp.tools.pagination import fetch_total
 from zabbix_mcp.zabbix_client import ZabbixClient
 
 
@@ -89,26 +90,27 @@ def register_history_tools(mcp, config: ZabbixConfig):
         """
         try:
             await ctx.info("Retrieving history...")
-            params: dict[str, Any] = {
-                "itemids": itemids,
-                "history": history,
-                "sortfield": sortfield,
-                "sortorder": sortorder,
-            }
+            # Sorting is kept separate because Zabbix rejects countOutput
+            # combined with sortfield.
+            filters: dict[str, Any] = {"itemids": itemids, "history": history}
             if time_from:
-                params["time_from"] = time_from
+                filters["time_from"] = time_from
             if time_till:
-                params["time_till"] = time_till
-            params["limit"] = limit
-
-            if count_output:
-                params["countOutput"] = True
+                filters["time_till"] = time_till
 
             async with ZabbixClient(config) as api:
-                result = await api.history.get(**params)
+                if count_output:
+                    return {"total": await fetch_total(api.history, filters)}
+
+                values = await api.history.get(
+                    **filters,
+                    sortfield=sortfield,
+                    sortorder=sortorder,
+                    limit=limit,
+                )
                 return {
-                    "history": result,
-                    "count": int(result) if count_output else len(result),
+                    "history": values,
+                    "count": len(values),
                     "limit": limit,
                 }
         except Exception as e:
@@ -175,21 +177,20 @@ def register_history_tools(mcp, config: ZabbixConfig):
         """
         try:
             await ctx.info("Retrieving trends...")
-            params: dict[str, Any] = {"itemids": itemids}
+            filters: dict[str, Any] = {"itemids": itemids}
             if time_from:
-                params["time_from"] = time_from
+                filters["time_from"] = time_from
             if time_till:
-                params["time_till"] = time_till
-            params["limit"] = limit
-
-            if count_output:
-                params["countOutput"] = True
+                filters["time_till"] = time_till
 
             async with ZabbixClient(config) as api:
-                result = await api.trend.get(**params)
+                if count_output:
+                    return {"total": await fetch_total(api.trend, filters)}
+
+                trends = await api.trend.get(**filters, limit=limit)
                 return {
-                    "trends": result,
-                    "count": int(result) if count_output else len(result),
+                    "trends": trends,
+                    "count": len(trends),
                     "limit": limit,
                 }
         except Exception as e:

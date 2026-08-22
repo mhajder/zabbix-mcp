@@ -9,6 +9,8 @@ from fastmcp import Context
 from pydantic import Field
 
 from zabbix_mcp.models import ZabbixConfig
+from zabbix_mcp.tools.pagination import fetch_page
+from zabbix_mcp.tools.pagination import fetch_total
 from zabbix_mcp.zabbix_client import ZabbixClient
 
 
@@ -57,6 +59,14 @@ def register_problems_tools(mcp, config: ZabbixConfig):
                 ge=1,
             ),
         ] = 100,
+        offset: Annotated[
+            int,
+            Field(
+                default=0,
+                description="Number of matching records to skip. Use with 'limit' to page through results; check 'has_more' and 'total' in the response.",
+                ge=0,
+            ),
+        ] = 0,
         acknowledged: Annotated[
             bool | None,
             Field(
@@ -72,9 +82,12 @@ def register_problems_tools(mcp, config: ZabbixConfig):
             ),
         ] = None,
         sortfield: Annotated[
-            str | None,
-            Field(default=None, description="Field to sort by."),
-        ] = None,
+            str,
+            Field(
+                default="eventid",
+                description="Field to sort by. A deterministic sort is required for paging to be consistent.",
+            ),
+        ] = "eventid",
         sortorder: Annotated[
             str,
             Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
@@ -106,12 +119,14 @@ def register_problems_tools(mcp, config: ZabbixConfig):
             search: Dictionary with search criteria like {'name': 'CPU'}.
             name_contains: Shortcut to search for problems by name (adds to 'search').
             limit: Maximum number of results to return (default 100). Set higher for more results.
+            offset: Number of matching records to skip, for paging.
             acknowledged: False = unacknowledged only, True = acknowledged only, None = all.
             suppressed: False = unsuppressed only, True = suppressed only, None = all.
 
         Returns:
             dict: Contains 'problems' list with problem objects, 'count' of results returned,
-                  and the applied 'limit'.
+                  'total' matching records, the applied 'limit' and 'offset', and
+                  'has_more' indicating whether further pages exist.
                   Each problem includes:
                   - eventid: Event ID of the problem
                   - objectid: Trigger ID that caused the problem
@@ -123,46 +138,57 @@ def register_problems_tools(mcp, config: ZabbixConfig):
         """
         try:
             await ctx.info("Retrieving problems...")
-            params: dict[str, Any] = {"output": output}
-            if sortfield:
-                params["sortfield"] = sortfield
-            if sortorder:
-                params["sortorder"] = sortorder
-            if count_output:
-                params["countOutput"] = True
+            # Sorting is kept out of 'filters' because Zabbix rejects
+            # countOutput combined with sortfield.
+            sort: dict[str, Any] = {"sortfield": sortfield, "sortorder": sortorder}
+            filters: dict[str, Any] = {}
+            shape: dict[str, Any] = {"output": output}
             if eventids:
-                params["eventids"] = eventids
+                filters["eventids"] = eventids
             if groupids:
-                params["groupids"] = groupids
+                filters["groupids"] = groupids
             if hostids:
-                params["hostids"] = hostids
+                filters["hostids"] = hostids
             if objectids:
-                params["objectids"] = objectids
+                filters["objectids"] = objectids
             if time_from:
-                params["time_from"] = time_from
+                filters["time_from"] = time_from
             if time_till:
-                params["time_till"] = time_till
+                filters["time_till"] = time_till
             if recent:
-                params["recent"] = recent
+                filters["recent"] = recent
             if severities:
-                params["severities"] = [int(s) for s in severities]
+                filters["severities"] = [int(s) for s in severities]
             _search = dict(search) if search is not None else {}
             if name_contains is not None:
                 _search["name"] = name_contains
             if _search:
-                params["search"] = _search
-            params["limit"] = limit
+                filters["search"] = _search
             if acknowledged is not None:
-                params["acknowledged"] = acknowledged
+                filters["acknowledged"] = acknowledged
             if suppressed is not None:
-                params["suppressed"] = suppressed
+                filters["suppressed"] = suppressed
 
             async with ZabbixClient(config) as api:
-                result = await api.problem.get(**params)
+                if count_output:
+                    return {"total": await fetch_total(api.problem, filters)}
+
+                rows, total = await fetch_page(
+                    api.problem,
+                    filters=filters,
+                    shape=shape,
+                    sort=sort,
+                    id_field="eventid",
+                    limit=limit,
+                    offset=offset,
+                )
                 return {
-                    "problems": result,
-                    "count": int(result) if count_output else len(result),
+                    "problems": rows,
+                    "count": len(rows),
+                    "total": total,
                     "limit": limit,
+                    "offset": offset,
+                    "has_more": offset + len(rows) < total,
                 }
         except Exception as e:
             await ctx.error(f"Error retrieving problems: {e!s}")
@@ -197,6 +223,14 @@ def register_problems_tools(mcp, config: ZabbixConfig):
                 ge=1,
             ),
         ] = 100,
+        offset: Annotated[
+            int,
+            Field(
+                default=0,
+                description="Number of matching records to skip. Use with 'limit' to page through results; check 'has_more' and 'total' in the response.",
+                ge=0,
+            ),
+        ] = 0,
         acknowledged: Annotated[
             bool | None,
             Field(
@@ -233,9 +267,12 @@ def register_problems_tools(mcp, config: ZabbixConfig):
             ),
         ] = False,
         sortfield: Annotated[
-            str | None,
-            Field(default=None, description="Field to sort by."),
-        ] = None,
+            str,
+            Field(
+                default="eventid",
+                description="Field to sort by. A deterministic sort is required for paging to be consistent.",
+            ),
+        ] = "eventid",
         sortorder: Annotated[
             str,
             Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
@@ -263,6 +300,7 @@ def register_problems_tools(mcp, config: ZabbixConfig):
             time_from: Unix timestamp to filter events from this time onwards.
             time_till: Unix timestamp to filter events up to this time.
             limit: Maximum number of results to return (default 100). Set higher for more results.
+            offset: Number of matching records to skip, for paging.
             acknowledged: False = unacknowledged only, True = acknowledged only, None = all.
             suppressed: False = unsuppressed only, True = suppressed only, None = all.
             select_hosts: If true, include the hosts each event belongs to.
@@ -271,7 +309,8 @@ def register_problems_tools(mcp, config: ZabbixConfig):
 
         Returns:
             dict: Contains 'events' list with event objects, 'count' of returned events,
-                  and the applied 'limit'.
+                  'total' matching records, the applied 'limit' and 'offset', and
+                  'has_more' indicating whether further pages exist.
                   Each event includes:
                   - eventid: Unique event ID
                   - objectid: Trigger ID that generated the event
@@ -283,43 +322,54 @@ def register_problems_tools(mcp, config: ZabbixConfig):
         """
         try:
             await ctx.info("Retrieving events...")
-            params: dict[str, Any] = {"output": output}
-            if sortfield:
-                params["sortfield"] = sortfield
-            if sortorder:
-                params["sortorder"] = sortorder
-            if count_output:
-                params["countOutput"] = True
+            # Sorting is kept out of 'filters' because Zabbix rejects
+            # countOutput combined with sortfield.
+            sort: dict[str, Any] = {"sortfield": sortfield, "sortorder": sortorder}
+            filters: dict[str, Any] = {}
+            shape: dict[str, Any] = {"output": output}
             if eventids:
-                params["eventids"] = eventids
+                filters["eventids"] = eventids
             if groupids:
-                params["groupids"] = groupids
+                filters["groupids"] = groupids
             if hostids:
-                params["hostids"] = hostids
+                filters["hostids"] = hostids
             if objectids:
-                params["objectids"] = objectids
+                filters["objectids"] = objectids
             if time_from:
-                params["time_from"] = time_from
+                filters["time_from"] = time_from
             if time_till:
-                params["time_till"] = time_till
-            params["limit"] = limit
+                filters["time_till"] = time_till
             if acknowledged is not None:
-                params["acknowledged"] = acknowledged
+                filters["acknowledged"] = acknowledged
             if suppressed is not None:
-                params["suppressed"] = suppressed
+                filters["suppressed"] = suppressed
             if select_hosts:
-                params["selectHosts"] = "extend"
+                shape["selectHosts"] = "extend"
             if select_related_object:
-                params["selectRelatedObject"] = "extend"
+                shape["selectRelatedObject"] = "extend"
             if select_tags:
-                params["selectTags"] = "extend"
+                shape["selectTags"] = "extend"
 
             async with ZabbixClient(config) as api:
-                result = await api.event.get(**params)
+                if count_output:
+                    return {"total": await fetch_total(api.event, filters)}
+
+                rows, total = await fetch_page(
+                    api.event,
+                    filters=filters,
+                    shape=shape,
+                    sort=sort,
+                    id_field="eventid",
+                    limit=limit,
+                    offset=offset,
+                )
                 return {
-                    "events": result,
-                    "count": int(result) if count_output else len(result),
+                    "events": rows,
+                    "count": len(rows),
+                    "total": total,
                     "limit": limit,
+                    "offset": offset,
+                    "has_more": offset + len(rows) < total,
                 }
         except Exception as e:
             await ctx.error(f"Error retrieving events: {e!s}")

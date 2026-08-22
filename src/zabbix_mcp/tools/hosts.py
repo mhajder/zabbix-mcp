@@ -468,6 +468,14 @@ def register_hosts_tools(mcp, config: ZabbixConfig):
                 ge=1,
             ),
         ] = 100,
+        offset: Annotated[
+            int,
+            Field(
+                default=0,
+                description="Number of matching records to skip. Use with 'limit' to page through results; check 'has_more' and 'total' in the response.",
+                ge=0,
+            ),
+        ] = 0,
         select_hosts: Annotated[
             bool,
             Field(
@@ -476,9 +484,12 @@ def register_hosts_tools(mcp, config: ZabbixConfig):
             ),
         ] = False,
         sortfield: Annotated[
-            str | None,
-            Field(default=None, description="Field to sort by."),
-        ] = None,
+            str,
+            Field(
+                default="groupid",
+                description="Field to sort by. A deterministic sort is required for paging to be consistent.",
+            ),
+        ] = "groupid",
         sortorder: Annotated[
             str,
             Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
@@ -505,11 +516,13 @@ def register_hosts_tools(mcp, config: ZabbixConfig):
                     Case-sensitive partial match.
             group_name_contains: Shortcut to search for groups by name (adds to 'search').
             limit: Maximum number of results to return (default 100). Set higher for more results.
+            offset: Number of matching records to skip, for paging.
             select_hosts: If true, include the hosts in each group.
 
         Returns:
             dict: Contains 'groups' list with group objects (id, name), 'count' of results returned,
-                  and the applied 'limit'.
+                  'total' matching records, the applied 'limit' and 'offset', and
+                  'has_more' indicating whether further pages exist.
                   Each group object has:
                   - groupid: Unique group ID
                   - name: Group name (e.g., 'Linux servers', 'Web Servers')
@@ -518,32 +531,43 @@ def register_hosts_tools(mcp, config: ZabbixConfig):
         """
         try:
             await ctx.info("Retrieving host groups...")
-            params: dict[str, Any] = {"output": output}
-            if sortfield:
-                params["sortfield"] = sortfield
-            if sortorder:
-                params["sortorder"] = sortorder
-            if count_output:
-                params["countOutput"] = True
+            # Sorting is kept out of 'filters' because Zabbix rejects
+            # countOutput combined with sortfield.
+            sort: dict[str, Any] = {"sortfield": sortfield, "sortorder": sortorder}
+            filters: dict[str, Any] = {}
+            shape: dict[str, Any] = {"output": output}
             if groupids:
-                params["groupids"] = groupids
+                filters["groupids"] = groupids
             if hostids:
-                params["hostids"] = hostids
+                filters["hostids"] = hostids
             _search = dict(search) if search is not None else {}
             if group_name_contains is not None:
                 _search["name"] = group_name_contains
             if _search:
-                params["search"] = _search
-            params["limit"] = limit
+                filters["search"] = _search
             if select_hosts:
-                params["selectHosts"] = "extend"
+                shape["selectHosts"] = "extend"
 
             async with ZabbixClient(config) as api:
-                result = await api.hostgroup.get(**params)
+                if count_output:
+                    return {"total": await fetch_total(api.hostgroup, filters)}
+
+                rows, total = await fetch_page(
+                    api.hostgroup,
+                    filters=filters,
+                    shape=shape,
+                    sort=sort,
+                    id_field="groupid",
+                    limit=limit,
+                    offset=offset,
+                )
                 return {
-                    "groups": result,
-                    "count": int(result) if count_output else len(result),
+                    "groups": rows,
+                    "count": len(rows),
+                    "total": total,
                     "limit": limit,
+                    "offset": offset,
+                    "has_more": offset + len(rows) < total,
                 }
         except Exception as e:
             await ctx.error(f"Error retrieving host groups: {e!s}")

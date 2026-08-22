@@ -9,6 +9,8 @@ from fastmcp import Context
 from pydantic import Field
 
 from zabbix_mcp.models import ZabbixConfig
+from zabbix_mcp.tools.pagination import fetch_page
+from zabbix_mcp.tools.pagination import fetch_total
 from zabbix_mcp.zabbix_client import ZabbixClient
 
 
@@ -39,10 +41,21 @@ def register_scripts_tools(mcp, config: ZabbixConfig):
                 ge=1,
             ),
         ] = 100,
+        offset: Annotated[
+            int,
+            Field(
+                default=0,
+                description="Number of matching records to skip. Use with 'limit' to page through results; check 'has_more' and 'total' in the response.",
+                ge=0,
+            ),
+        ] = 0,
         sortfield: Annotated[
-            str | None,
-            Field(default=None, description="Field to sort by."),
-        ] = None,
+            str,
+            Field(
+                default="scriptid",
+                description="Field to sort by. A deterministic sort is required for paging to be consistent.",
+            ),
+        ] = "scriptid",
         sortorder: Annotated[
             str,
             Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
@@ -68,10 +81,12 @@ def register_scripts_tools(mcp, config: ZabbixConfig):
             search: Dictionary with search criteria like {'name': 'restart'}.
             filter_params: Additional filter parameters for advanced filtering.
             limit: Maximum number of results to return (default 100). Set higher for more results.
+            offset: Number of matching records to skip, for paging.
 
         Returns:
             dict: Contains 'scripts' list with script objects, 'count' of returned scripts,
-                  and the applied 'limit'.
+                  'total' matching records, the applied 'limit' and 'offset', and
+                  'has_more' indicating whether further pages exist.
                   Each script includes:
                   - scriptid: Unique script ID
                   - name: Script name
@@ -81,32 +96,42 @@ def register_scripts_tools(mcp, config: ZabbixConfig):
         """
         try:
             await ctx.info("Retrieving scripts...")
-            params: dict[str, Any] = {"output": output}
-            if sortfield:
-                params["sortfield"] = sortfield
-            if sortorder:
-                params["sortorder"] = sortorder
-            if count_output:
-                params["countOutput"] = True
+            # Sorting is kept out of 'filters' because Zabbix rejects
+            # countOutput combined with sortfield.
+            sort: dict[str, Any] = {"sortfield": sortfield, "sortorder": sortorder}
+            filters: dict[str, Any] = {}
+            shape: dict[str, Any] = {"output": output}
             if scriptids:
-                params["scriptids"] = scriptids
+                filters["scriptids"] = scriptids
             if hostids:
-                params["hostids"] = hostids
+                filters["hostids"] = hostids
             if groupids:
-                params["groupids"] = groupids
+                filters["groupids"] = groupids
             if search:
-                params["search"] = search
+                filters["search"] = search
             if filter_params:
-                params["filter"] = filter_params
-
-            params["limit"] = limit
+                filters["filter"] = filter_params
 
             async with ZabbixClient(config) as api:
-                result = await api.script.get(**params)
+                if count_output:
+                    return {"total": await fetch_total(api.script, filters)}
+
+                rows, total = await fetch_page(
+                    api.script,
+                    filters=filters,
+                    shape=shape,
+                    sort=sort,
+                    id_field="scriptid",
+                    limit=limit,
+                    offset=offset,
+                )
                 return {
-                    "scripts": result,
-                    "count": int(result) if count_output else len(result),
+                    "scripts": rows,
+                    "count": len(rows),
+                    "total": total,
                     "limit": limit,
+                    "offset": offset,
+                    "has_more": offset + len(rows) < total,
                 }
         except Exception as e:
             await ctx.error(f"Error retrieving scripts: {e!s}")

@@ -9,6 +9,8 @@ from fastmcp import Context
 from pydantic import Field
 
 from zabbix_mcp.models import ZabbixConfig
+from zabbix_mcp.tools.pagination import fetch_page
+from zabbix_mcp.tools.pagination import fetch_total
 from zabbix_mcp.zabbix_client import ZabbixClient
 
 
@@ -39,6 +41,14 @@ def register_graphs_tools(mcp, config: ZabbixConfig):
                 ge=1,
             ),
         ] = 100,
+        offset: Annotated[
+            int,
+            Field(
+                default=0,
+                description="Number of matching records to skip. Use with 'limit' to page through results; check 'has_more' and 'total' in the response.",
+                ge=0,
+            ),
+        ] = 0,
         select_items: Annotated[
             bool,
             Field(
@@ -61,9 +71,12 @@ def register_graphs_tools(mcp, config: ZabbixConfig):
             ),
         ] = False,
         sortfield: Annotated[
-            str | None,
-            Field(default=None, description="Field to sort by."),
-        ] = None,
+            str,
+            Field(
+                default="graphid",
+                description="Field to sort by. A deterministic sort is required for paging to be consistent.",
+            ),
+        ] = "graphid",
         sortorder: Annotated[
             str,
             Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
@@ -89,13 +102,15 @@ def register_graphs_tools(mcp, config: ZabbixConfig):
             search: Dictionary with search criteria like {'name': 'CPU'}.
             filter_params: Additional filter parameters for advanced filtering.
             limit: Maximum number of results to return (default 100). Set higher for more results.
+            offset: Number of matching records to skip, for paging.
             select_items: If true, each graph includes a 'gitems' list with graph items.
             select_hosts: If true, each graph includes a 'hosts' list.
             select_templates: If true, each graph includes a 'templates' list.
 
         Returns:
             dict: Contains 'graphs' list with graph objects, 'count' of returned graphs,
-                  and the applied 'limit'.
+                  'total' matching records, the applied 'limit' and 'offset', and
+                  'has_more' indicating whether further pages exist.
                   Each graph includes:
                   - graphid: Unique graph ID
                   - name: Graph name
@@ -105,37 +120,48 @@ def register_graphs_tools(mcp, config: ZabbixConfig):
         """
         try:
             await ctx.info("Retrieving graphs...")
-            params: dict[str, Any] = {"output": output}
-            if sortfield:
-                params["sortfield"] = sortfield
-            if sortorder:
-                params["sortorder"] = sortorder
-            if count_output:
-                params["countOutput"] = True
+            # Sorting is kept out of 'filters' because Zabbix rejects
+            # countOutput combined with sortfield.
+            sort: dict[str, Any] = {"sortfield": sortfield, "sortorder": sortorder}
+            filters: dict[str, Any] = {}
+            shape: dict[str, Any] = {"output": output}
             if graphids:
-                params["graphids"] = graphids
+                filters["graphids"] = graphids
             if hostids:
-                params["hostids"] = hostids
+                filters["hostids"] = hostids
             if templateids:
-                params["templateids"] = templateids
+                filters["templateids"] = templateids
             if search:
-                params["search"] = search
+                filters["search"] = search
             if filter_params:
-                params["filter"] = filter_params
-            params["limit"] = limit
+                filters["filter"] = filter_params
             if select_items:
-                params["selectGraphItems"] = "extend"
+                shape["selectGraphItems"] = "extend"
             if select_hosts:
-                params["selectHosts"] = "extend"
+                shape["selectHosts"] = "extend"
             if select_templates:
-                params["selectTemplates"] = "extend"
+                shape["selectTemplates"] = "extend"
 
             async with ZabbixClient(config) as api:
-                result = await api.graph.get(**params)
+                if count_output:
+                    return {"total": await fetch_total(api.graph, filters)}
+
+                rows, total = await fetch_page(
+                    api.graph,
+                    filters=filters,
+                    shape=shape,
+                    sort=sort,
+                    id_field="graphid",
+                    limit=limit,
+                    offset=offset,
+                )
                 return {
-                    "graphs": result,
-                    "count": int(result) if count_output else len(result),
+                    "graphs": rows,
+                    "count": len(rows),
+                    "total": total,
                     "limit": limit,
+                    "offset": offset,
+                    "has_more": offset + len(rows) < total,
                 }
         except Exception as e:
             await ctx.error(f"Error retrieving graphs: {e!s}")

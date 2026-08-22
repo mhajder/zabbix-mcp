@@ -9,6 +9,8 @@ from fastmcp import Context
 from pydantic import Field
 
 from zabbix_mcp.models import ZabbixConfig
+from zabbix_mcp.tools.pagination import fetch_page
+from zabbix_mcp.tools.pagination import fetch_total
 from zabbix_mcp.zabbix_client import ZabbixClient
 
 
@@ -43,10 +45,21 @@ def register_macros_tools(mcp, config: ZabbixConfig):
                 ge=1,
             ),
         ] = 100,
+        offset: Annotated[
+            int,
+            Field(
+                default=0,
+                description="Number of matching records to skip. Use with 'limit' to page through results; check 'has_more' and 'total' in the response.",
+                ge=0,
+            ),
+        ] = 0,
         sortfield: Annotated[
-            str | None,
-            Field(default=None, description="Field to sort by."),
-        ] = None,
+            str,
+            Field(
+                default="macro",
+                description="Field to sort by. usermacro.get only allows 'macro'.",
+            ),
+        ] = "macro",
         sortorder: Annotated[
             str,
             Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
@@ -74,10 +87,12 @@ def register_macros_tools(mcp, config: ZabbixConfig):
             search: Dictionary with search criteria like {'macro': '{$THRESHOLD}'}.
             filter_params: Additional filter parameters for advanced filtering.
             limit: Maximum number of results to return (default 100). Set higher for more results.
+            offset: Number of matching records to skip, for paging.
 
         Returns:
             dict: Contains 'macros' list with macro objects, 'count' of returned macros,
-                  and the applied 'limit'.
+                  'total' matching records, the applied 'limit' and 'offset', and
+                  'has_more' indicating whether further pages exist.
                   Each macro includes:
                   - hostmacrois/globalmacrois: Macro ID
                   - macro: Macro name/identifier
@@ -88,36 +103,48 @@ def register_macros_tools(mcp, config: ZabbixConfig):
         """
         try:
             await ctx.info("Retrieving user macros...")
-            params: dict[str, Any] = {"output": output}
-            if sortfield:
-                params["sortfield"] = sortfield
-            if sortorder:
-                params["sortorder"] = sortorder
-            if count_output:
-                params["countOutput"] = True
+            # Sorting is kept out of 'filters' because Zabbix rejects
+            # countOutput combined with sortfield.
+            sort: dict[str, Any] = {"sortfield": sortfield, "sortorder": sortorder}
+            filters: dict[str, Any] = {}
+            shape: dict[str, Any] = {"output": output}
             if hostmacroids:
-                params["hostmacroids"] = hostmacroids
+                filters["hostmacroids"] = hostmacroids
             if globalmacroids:
-                params["globalmacroids"] = globalmacroids
+                filters["globalmacroids"] = globalmacroids
             if hostids:
-                params["hostids"] = hostids
+                filters["hostids"] = hostids
             if templateids:
-                params["templateids"] = templateids
+                filters["templateids"] = templateids
             if globalmacro:
-                params["globalmacro"] = globalmacro
+                filters["globalmacro"] = globalmacro
             if search:
-                params["search"] = search
+                filters["search"] = search
             if filter_params:
-                params["filter"] = filter_params
-
-            params["limit"] = limit
+                filters["filter"] = filter_params
 
             async with ZabbixClient(config) as api:
-                result = await api.usermacro.get(**params)
+                if count_output:
+                    return {"total": await fetch_total(api.usermacro, filters)}
+
+                rows, total = await fetch_page(
+                    api.usermacro,
+                    filters=filters,
+                    shape=shape,
+                    sort=sort,
+                    # Global and host macros are distinct objects with distinct
+                    # id properties; only one kind comes back per call.
+                    id_field="globalmacroid" if globalmacro else "hostmacroid",
+                    limit=limit,
+                    offset=offset,
+                )
                 return {
-                    "macros": result,
-                    "count": int(result) if count_output else len(result),
+                    "macros": rows,
+                    "count": len(rows),
+                    "total": total,
                     "limit": limit,
+                    "offset": offset,
+                    "has_more": offset + len(rows) < total,
                 }
         except Exception as e:
             await ctx.error(f"Error retrieving user macros: {e!s}")

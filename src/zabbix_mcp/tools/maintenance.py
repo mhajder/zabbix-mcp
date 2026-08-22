@@ -9,6 +9,8 @@ from fastmcp import Context
 from pydantic import Field
 
 from zabbix_mcp.models import ZabbixConfig
+from zabbix_mcp.tools.pagination import fetch_page
+from zabbix_mcp.tools.pagination import fetch_total
 from zabbix_mcp.zabbix_client import ZabbixClient
 
 
@@ -37,10 +39,21 @@ def register_maintenance_tools(mcp, config: ZabbixConfig):
                 ge=1,
             ),
         ] = 100,
+        offset: Annotated[
+            int,
+            Field(
+                default=0,
+                description="Number of matching records to skip. Use with 'limit' to page through results; check 'has_more' and 'total' in the response.",
+                ge=0,
+            ),
+        ] = 0,
         sortfield: Annotated[
-            str | None,
-            Field(default=None, description="Field to sort by."),
-        ] = None,
+            str,
+            Field(
+                default="maintenanceid",
+                description="Field to sort by. A deterministic sort is required for paging to be consistent.",
+            ),
+        ] = "maintenanceid",
         sortorder: Annotated[
             str,
             Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
@@ -64,10 +77,12 @@ def register_maintenance_tools(mcp, config: ZabbixConfig):
             groupids: List of host group IDs to get maintenance for.
             hostids: List of host IDs to get maintenance for.
             limit: Maximum number of results to return (default 100). Set higher for more results.
+            offset: Number of matching records to skip, for paging.
 
         Returns:
             dict: Contains 'maintenance' list with maintenance objects, 'count' of returned records,
-                  and the applied 'limit'.
+                  'total' matching records, the applied 'limit' and 'offset', and
+                  'has_more' indicating whether further pages exist.
                   Each maintenance includes:
                   - maintenanceid: Unique maintenance ID
                   - name: Maintenance window name
@@ -78,28 +93,38 @@ def register_maintenance_tools(mcp, config: ZabbixConfig):
         """
         try:
             await ctx.info("Retrieving maintenance periods...")
-            params: dict[str, Any] = {"output": output}
-            if sortfield:
-                params["sortfield"] = sortfield
-            if sortorder:
-                params["sortorder"] = sortorder
-            if count_output:
-                params["countOutput"] = True
+            # Sorting is kept out of 'filters' because Zabbix rejects
+            # countOutput combined with sortfield.
+            sort: dict[str, Any] = {"sortfield": sortfield, "sortorder": sortorder}
+            filters: dict[str, Any] = {}
+            shape: dict[str, Any] = {"output": output}
             if maintenanceids:
-                params["maintenanceids"] = maintenanceids
+                filters["maintenanceids"] = maintenanceids
             if groupids:
-                params["groupids"] = groupids
+                filters["groupids"] = groupids
             if hostids:
-                params["hostids"] = hostids
-
-            params["limit"] = limit
+                filters["hostids"] = hostids
 
             async with ZabbixClient(config) as api:
-                result = await api.maintenance.get(**params)
+                if count_output:
+                    return {"total": await fetch_total(api.maintenance, filters)}
+
+                rows, total = await fetch_page(
+                    api.maintenance,
+                    filters=filters,
+                    shape=shape,
+                    sort=sort,
+                    id_field="maintenanceid",
+                    limit=limit,
+                    offset=offset,
+                )
                 return {
-                    "maintenance": result,
-                    "count": int(result) if count_output else len(result),
+                    "maintenance": rows,
+                    "count": len(rows),
+                    "total": total,
                     "limit": limit,
+                    "offset": offset,
+                    "has_more": offset + len(rows) < total,
                 }
         except Exception as e:
             await ctx.error(f"Error retrieving maintenance: {e!s}")
