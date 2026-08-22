@@ -14,6 +14,58 @@ from zabbix_mcp.tools.pagination import fetch_page
 from zabbix_mcp.tools.pagination import fetch_total
 from zabbix_mcp.zabbix_client import ZabbixClient
 
+# Every field a maintenance time period accepts. Dropping any of them silently
+# changes the recurrence the caller asked for, so all are passed through.
+_TIMEPERIOD_FIELDS = (
+    "timeperiod_type",
+    "every",
+    "month",
+    "dayofweek",
+    "day",
+    "start_time",
+    "start_date",
+    "period",
+)
+
+
+def _normalize_timeperiods(
+    timeperiods: list[dict[str, Any]] | None,
+    active_since: int,
+    active_till: int,
+) -> list[dict[str, Any]]:
+    """Coerce caller-supplied time periods, or build a one-off default.
+
+    Args:
+        timeperiods: Raw period dicts from the caller, if any.
+        active_since: Maintenance window start, used for the default period.
+        active_till: Maintenance window end, used for the default period.
+
+    Returns:
+        list: Time periods ready for maintenance.create. Never empty - Zabbix
+            requires at least one.
+    """
+    normalized = [
+        {
+            field: int(period[field])
+            for field in _TIMEPERIOD_FIELDS
+            if period.get(field) is not None
+        }
+        for period in timeperiods or []
+        if isinstance(period, dict)
+    ]
+    normalized = [period for period in normalized if period]
+    if normalized:
+        return normalized
+
+    # "One time only", covering exactly the requested window.
+    return [
+        {
+            "timeperiod_type": 0,
+            "start_date": int(active_since),
+            "period": max(int(active_till) - int(active_since), 60),
+        }
+    ]
+
 
 def register_maintenance_tools(mcp, config: ZabbixConfig):
     """Register Zabbix maintenance tools with the MCP server"""
@@ -145,7 +197,18 @@ def register_maintenance_tools(mcp, config: ZabbixConfig):
         active_till: Annotated[int, Field(description="End time (Unix timestamp).")],
         groupids: Annotated[list[str] | None, Field(default=None)] = None,
         hostids: Annotated[list[str] | None, Field(default=None)] = None,
-        timeperiods: Annotated[list[dict[str, Any]] | None, Field(default=None)] = None,
+        timeperiods: Annotated[
+            list[dict[str, Any]] | None,
+            Field(
+                default=None,
+                description=(
+                    "When maintenance actually runs, e.g. [{'timeperiod_type': 0, "
+                    "'start_date': 1735689600, 'period': 3600}]. Required by Zabbix; "
+                    "if omitted, a single one-off period covering active_since to "
+                    "active_till is sent."
+                ),
+            ),
+        ] = None,
         description: Annotated[str | None, Field(default=None)] = None,
     ) -> dict:
         """
@@ -161,7 +224,12 @@ def register_maintenance_tools(mcp, config: ZabbixConfig):
             groupids: List of host group IDs to apply maintenance to. At least one of groupids
                      or hostids is required.
             hostids: List of specific host IDs to apply maintenance to.
-            timeperiods: Optional list of time period objects for recurring maintenance.
+            timeperiods: When the maintenance actually runs. Zabbix requires this; when it
+                     is omitted a single one-off period spanning active_since to
+                     active_till is sent, which is what 'maintenance from X to Y' means.
+                     Each period accepts timeperiod_type (0=one time, 2=daily, 3=weekly,
+                     4=monthly), every, month, dayofweek, day, start_time, start_date
+                     and period.
             description: Optional description explaining the maintenance purpose.
 
         Returns:
@@ -172,10 +240,19 @@ def register_maintenance_tools(mcp, config: ZabbixConfig):
         """
         try:
             await ctx.info(f"Creating maintenance '{name}'...")
+            if not groupids and not hostids:
+                raise ValueError(
+                    "At least one of 'groupids' or 'hostids' must be given - Zabbix "
+                    "requires a maintenance window to cover something."
+                )
+
             params: dict[str, Any] = {
                 "name": name,
                 "active_since": active_since,
                 "active_till": active_till,
+                "timeperiods": _normalize_timeperiods(
+                    timeperiods, active_since, active_till
+                ),
             }
 
             if groupids:
@@ -183,27 +260,6 @@ def register_maintenance_tools(mcp, config: ZabbixConfig):
 
             if hostids:
                 params["hosts"] = [{"hostid": str(h)} for h in hostids]
-
-            if timeperiods:
-                normalized: list[dict[str, Any]] = []
-                for tp in timeperiods:
-                    if not isinstance(tp, dict):
-                        continue
-                    ntp: dict[str, Any] = {}
-                    if "timeperiod_type" in tp:
-                        ntp["timeperiod_type"] = int(tp["timeperiod_type"])
-                    if "start_date" in tp:
-                        ntp["start_date"] = int(tp["start_date"])
-                    if "period" in tp:
-                        ntp["period"] = int(tp["period"])
-                    if "dayofweek" in tp:
-                        ntp["dayofweek"] = tp["dayofweek"]
-                    if "start_time" in tp:
-                        ntp["start_time"] = int(tp["start_time"])
-                    if ntp:
-                        normalized.append(ntp)
-                if normalized:
-                    params["timeperiods"] = normalized
 
             if description:
                 params["description"] = description
