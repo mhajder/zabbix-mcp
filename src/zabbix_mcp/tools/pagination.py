@@ -77,7 +77,22 @@ async def fetch_page(
     if not page_ids:
         return [], total
 
-    rows = await api_object.get(**{f"{id_field}s": page_ids}, **shape)
+    # Several objects (hostgroup, user, event, problem, mediatype, script) omit
+    # their id unless it is named in 'output', and the id is what orders the page,
+    # so request it and drop it again if the caller did not ask for it.
+    fetch_shape = dict(shape)
+    requested = fetch_shape.get("output")
+    borrowed_id = isinstance(requested, list) and id_field not in requested
+    if borrowed_id:
+        fetch_shape["output"] = [*requested, id_field]
+
+    # The original filters are reapplied: for some objects an id alone is not
+    # enough to match the record (problem.get needs 'recent' to return resolved
+    # problems, for one), and the page ids simply narrow that same result set.
+    rows = await api_object.get(**{**filters, f"{id_field}s": page_ids}, **fetch_shape)
     position = {value: index for index, value in enumerate(page_ids)}
-    rows.sort(key=lambda row: position.get(row[id_field], len(position)))
+    rows.sort(key=lambda row: position.get(row.get(id_field), len(position)))
+    if borrowed_id:
+        for row in rows:
+            row.pop(id_field, None)
     return rows, total
