@@ -18,9 +18,13 @@ from fastmcp.server.auth.providers.jwt import StaticTokenVerifier
 from fastmcp.server.middleware.rate_limiting import SlidingWindowRateLimitingMiddleware
 from fastmcp.server.transforms.search import BM25SearchTransform
 from fastmcp.server.transforms.search import RegexSearchTransform
+from starlette.requests import Request
+from starlette.responses import PlainTextResponse
 
 from zabbix_mcp.sentry_init import init_sentry
 from zabbix_mcp.tools import register_tools
+from zabbix_mcp.utils import HEALTH_PATH
+from zabbix_mcp.utils import HTTP_TRANSPORTS
 from zabbix_mcp.zabbix_client import get_transport_config_from_env
 from zabbix_mcp.zabbix_client import get_zabbix_config_from_env
 
@@ -93,6 +97,19 @@ mcp = FastMCP(
 
 # Register all tools
 register_tools(mcp, ZABBIX_CONFIG)
+
+
+@mcp.custom_route(HEALTH_PATH, methods=["GET"], include_in_schema=False)
+async def health(_request: Request) -> PlainTextResponse:
+    """Liveness probe for the HTTP transports.
+
+    Answering proves the server handles requests, which a TCP connect does not:
+    the kernel completes the handshake even while the event loop is stuck. It
+    deliberately does not call Zabbix, so an outage there does not get a
+    healthy MCP server restarted. FastMCP serves custom routes outside the
+    bearer-token auth, so the container healthcheck needs no token.
+    """
+    return PlainTextResponse("ok")
 
 
 def configure_component_visibility() -> None:
@@ -180,7 +197,7 @@ def main():
         raise SystemExit(1)
 
     if (
-        TRANSPORT_CONFIG.transport_type in {"sse", "http"}
+        TRANSPORT_CONFIG.transport_type in HTTP_TRANSPORTS
         and not TRANSPORT_CONFIG.http_bearer_token
     ):
         logger.warning(

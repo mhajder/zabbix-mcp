@@ -11,7 +11,10 @@ from zabbix_utils.types import APIVersion
 from zabbix_mcp.models import TransportConfig
 from zabbix_mcp.models import ZabbixConfig
 from zabbix_mcp.retry import build_session
+from zabbix_mcp.utils import http_host_from_env
+from zabbix_mcp.utils import http_port_from_env
 from zabbix_mcp.utils import parse_bool
+from zabbix_mcp.utils import transport_from_env
 
 logger = logging.getLogger(__name__)
 
@@ -201,9 +204,9 @@ def get_transport_config_from_env() -> TransportConfig:
         http_bearer_token = http_bearer_token.strip() or None
 
     return TransportConfig(
-        transport_type=os.getenv("MCP_TRANSPORT", "stdio").lower(),
-        http_host=os.getenv("MCP_HTTP_HOST", "127.0.0.1"),
-        http_port=int(os.getenv("MCP_HTTP_PORT", "8000")),
+        transport_type=transport_from_env(),
+        http_host=http_host_from_env(),
+        http_port=http_port_from_env(),
         http_bearer_token=http_bearer_token,
     )
 
