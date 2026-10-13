@@ -41,7 +41,7 @@ Zabbix MCP Server is a Python-based Model Context Protocol (MCP) server designed
 
 ### Prerequisites
 
-- Python 3.11 to 3.14
+- Python 3.11 to 3.15
 - Access to a Zabbix server. Versions 6.0 to 7.4 are supported - that is the range
   the `zabbix-utils` client accepts, and it refuses to connect outside it unless
   `ZABBIX_SKIP_VERSION_CHECK=true` is set
