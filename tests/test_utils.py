@@ -41,6 +41,8 @@ def test_parse_bool(val, default, expected):
         (None, "stdio"),
         ("http", "http"),
         ("SSE", "sse"),
+        # FastMCP's name for the streamable HTTP transport.
+        ("streamable-http", "http"),
         # Only lowercased: anything else selects stdio in the server.
         (" http ", " http "),
         ("", ""),
