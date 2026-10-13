@@ -11,6 +11,7 @@ from zabbix_utils.types import APIVersion
 from zabbix_mcp.models import TransportConfig
 from zabbix_mcp.models import ZabbixConfig
 from zabbix_mcp.retry import build_session
+from zabbix_mcp.utils import HTTP_TRANSPORTS
 from zabbix_mcp.utils import env_bool
 from zabbix_mcp.utils import env_int
 from zabbix_mcp.utils import env_str
@@ -170,6 +171,11 @@ def _password_from_env() -> str | None:
     return password if password and password.strip() else None
 
 
+def _env_setting(name: str, field: str) -> int:
+    """Read an integer setting, defaulting to ZabbixConfig's own default."""
+    return env_int(name, ZabbixConfig.model_fields[field].default)
+
+
 def get_zabbix_config_from_env() -> ZabbixConfig:
     """Get Zabbix configuration from environment variables."""
     # Parse disabled tags from comma-separated string
@@ -180,6 +186,35 @@ def get_zabbix_config_from_env() -> ZabbixConfig:
             tag.strip() for tag in disabled_tags_str.split(",") if tag.strip()
         }
 
+    # Unknown values used to fall back to bm25 silently, hiding a typo such as
+    # "regx" or a stray space; trim, then refuse anything else - but only when
+    # tool search is on, so a leftover value cannot stop a server that never
+    # uses it.
+    tool_search_enabled = env_bool("TOOL_SEARCH_ENABLED", default=False)
+    tool_search_strategy = (env_str("TOOL_SEARCH_STRATEGY") or "bm25").lower()
+    if tool_search_enabled and tool_search_strategy not in ("bm25", "regex"):
+        raise ValueError(
+            "TOOL_SEARCH_STRATEGY must be 'bm25' or 'regex', "
+            f"got {os.getenv('TOOL_SEARCH_STRATEGY')!r}"
+        )
+    rate_limit_enabled = env_bool("RATE_LIMIT_ENABLED", default=False)
+
+    # Numeric settings of a disabled feature are not read at all: a leftover
+    # value must not stop a server that never uses it, and ZabbixConfig's own
+    # defaults then apply. Read ones fall back to those same defaults.
+    numbers: dict[str, int] = {}
+    if rate_limit_enabled:
+        numbers["rate_limit_max_requests"] = _env_setting(
+            "RATE_LIMIT_MAX_REQUESTS", "rate_limit_max_requests"
+        )
+        numbers["rate_limit_window_minutes"] = _env_setting(
+            "RATE_LIMIT_WINDOW_MINUTES", "rate_limit_window_minutes"
+        )
+    if tool_search_enabled:
+        numbers["tool_search_max_results"] = _env_setting(
+            "TOOL_SEARCH_MAX_RESULTS", "tool_search_max_results"
+        )
+
     return ZabbixConfig(
         # Whitespace-only counts as missing: it would otherwise start the server
         # and fail every call with a confusing connection or auth error.
@@ -188,29 +223,32 @@ def get_zabbix_config_from_env() -> ZabbixConfig:
         user=env_str("ZABBIX_USER"),
         password=_password_from_env(),
         verify_ssl=env_bool("ZABBIX_VERIFY_SSL", default=True),
-        timeout=env_int("ZABBIX_TIMEOUT", 30),
+        timeout=_env_setting("ZABBIX_TIMEOUT", "timeout"),
         skip_version_check=env_bool("ZABBIX_SKIP_VERSION_CHECK", default=False),
         read_only_mode=env_bool("READ_ONLY_MODE", default=False),
         disabled_tags=disabled_tags,
-        rate_limit_enabled=env_bool("RATE_LIMIT_ENABLED", default=False),
-        rate_limit_max_requests=env_int("RATE_LIMIT_MAX_REQUESTS", 60),
-        rate_limit_window_minutes=env_int("RATE_LIMIT_WINDOW_MINUTES", 1),
-        tool_search_enabled=env_bool("TOOL_SEARCH_ENABLED", default=False),
-        tool_search_strategy=(
-            "regex"
-            if os.getenv("TOOL_SEARCH_STRATEGY", "bm25").lower() == "regex"
-            else "bm25"
-        ),
-        tool_search_max_results=env_int("TOOL_SEARCH_MAX_RESULTS", 5),
+        rate_limit_enabled=rate_limit_enabled,
+        tool_search_enabled=tool_search_enabled,
+        tool_search_strategy=("regex" if tool_search_strategy == "regex" else "bm25"),
+        **numbers,
     )
 
 
 def get_transport_config_from_env() -> TransportConfig:
     """Get transport configuration from environment variables."""
+    transport_type = transport_from_env()
+    # The port is only parsed when an HTTP transport will bind it: a leftover
+    # non-numeric MCP_HTTP_PORT must not stop stdio or `fastmcp run`.
+    http_port = (
+        http_port_from_env()
+        if transport_type in HTTP_TRANSPORTS
+        else TransportConfig.model_fields["http_port"].default
+    )
+
     return TransportConfig(
-        transport_type=transport_from_env(),
+        transport_type=transport_type,
         http_host=http_host_from_env(),
-        http_port=http_port_from_env(),
+        http_port=http_port,
         http_bearer_token=env_str("MCP_HTTP_BEARER_TOKEN"),
     )
 
