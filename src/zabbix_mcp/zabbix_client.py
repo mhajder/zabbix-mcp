@@ -11,9 +11,9 @@ from zabbix_utils.types import APIVersion
 from zabbix_mcp.models import TransportConfig
 from zabbix_mcp.models import ZabbixConfig
 from zabbix_mcp.retry import build_session
+from zabbix_mcp.utils import env_bool
 from zabbix_mcp.utils import http_host_from_env
 from zabbix_mcp.utils import http_port_from_env
-from zabbix_mcp.utils import parse_bool
 from zabbix_mcp.utils import transport_from_env
 
 logger = logging.getLogger(__name__)
@@ -177,17 +177,15 @@ def get_zabbix_config_from_env() -> ZabbixConfig:
         token=os.getenv("ZABBIX_TOKEN"),
         user=os.getenv("ZABBIX_USER"),
         password=os.getenv("ZABBIX_PASSWORD"),
-        verify_ssl=parse_bool(os.getenv("ZABBIX_VERIFY_SSL"), default=True),
+        verify_ssl=env_bool("ZABBIX_VERIFY_SSL", default=True),
         timeout=int(os.getenv("ZABBIX_TIMEOUT", "30")),
-        skip_version_check=parse_bool(
-            os.getenv("ZABBIX_SKIP_VERSION_CHECK"), default=False
-        ),
-        read_only_mode=parse_bool(os.getenv("READ_ONLY_MODE"), default=False),
+        skip_version_check=env_bool("ZABBIX_SKIP_VERSION_CHECK", default=False),
+        read_only_mode=env_bool("READ_ONLY_MODE", default=False),
         disabled_tags=disabled_tags,
-        rate_limit_enabled=parse_bool(os.getenv("RATE_LIMIT_ENABLED"), default=False),
+        rate_limit_enabled=env_bool("RATE_LIMIT_ENABLED", default=False),
         rate_limit_max_requests=int(os.getenv("RATE_LIMIT_MAX_REQUESTS", "60")),
         rate_limit_window_minutes=int(os.getenv("RATE_LIMIT_WINDOW_MINUTES", "1")),
-        tool_search_enabled=parse_bool(os.getenv("TOOL_SEARCH_ENABLED"), default=False),
+        tool_search_enabled=env_bool("TOOL_SEARCH_ENABLED", default=False),
         tool_search_strategy=(
             "regex"
             if os.getenv("TOOL_SEARCH_STRATEGY", "bm25").lower() == "regex"
