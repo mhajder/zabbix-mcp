@@ -25,6 +25,8 @@ from zabbix_mcp.sentry_init import init_sentry
 from zabbix_mcp.tools import register_tools
 from zabbix_mcp.utils import HEALTH_PATH
 from zabbix_mcp.utils import HTTP_TRANSPORTS
+from zabbix_mcp.utils import TRANSPORT_ALIASES
+from zabbix_mcp.utils import VALID_TRANSPORTS
 from zabbix_mcp.zabbix_client import get_transport_config_from_env
 from zabbix_mcp.zabbix_client import get_zabbix_config_from_env
 
@@ -162,6 +164,18 @@ if ZABBIX_CONFIG.rate_limit_enabled:
 
 
 def main():
+    # A typo must not fall back to stdio: the HTTP port would never open while
+    # the container healthcheck, which skips non-HTTP transports, kept reporting
+    # healthy. Checked here rather than at import, because `fastmcp run` imports
+    # this module but picks the transport itself.
+    if TRANSPORT_CONFIG.transport_type not in VALID_TRANSPORTS:
+        logger.error(
+            "Unknown MCP_TRANSPORT %r. Valid values: %s",
+            TRANSPORT_CONFIG.transport_type,
+            ", ".join([*sorted(VALID_TRANSPORTS), *TRANSPORT_ALIASES]),
+        )
+        raise SystemExit(1)
+
     # Basic validation - need either token OR user/password
     has_token = bool(ZABBIX_CONFIG.token)
     has_user_pass = bool(ZABBIX_CONFIG.user and ZABBIX_CONFIG.password)
@@ -234,7 +248,7 @@ def main():
             port=TRANSPORT_CONFIG.http_port,
         )
     else:
-        # Default to STDIO transport
+        # STDIO transport
         logger.info("Using STDIO transport")
         mcp.run()
 
