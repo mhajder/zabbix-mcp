@@ -12,6 +12,8 @@ from zabbix_mcp.models import TransportConfig
 from zabbix_mcp.models import ZabbixConfig
 from zabbix_mcp.retry import build_session
 from zabbix_mcp.utils import env_bool
+from zabbix_mcp.utils import env_int
+from zabbix_mcp.utils import env_str
 from zabbix_mcp.utils import http_host_from_env
 from zabbix_mcp.utils import http_port_from_env
 from zabbix_mcp.utils import transport_from_env
@@ -162,6 +164,12 @@ class ZabbixClient:
         return entry[0] if entry else None
 
 
+def _password_from_env() -> str | None:
+    """Return ZABBIX_PASSWORD unstripped, as spaces may be part of it; blank is unset."""
+    password = os.getenv("ZABBIX_PASSWORD")
+    return password if password and password.strip() else None
+
+
 def get_zabbix_config_from_env() -> ZabbixConfig:
     """Get Zabbix configuration from environment variables."""
     # Parse disabled tags from comma-separated string
@@ -173,39 +181,37 @@ def get_zabbix_config_from_env() -> ZabbixConfig:
         }
 
     return ZabbixConfig(
-        zabbix_url=os.getenv("ZABBIX_URL", ""),
-        token=os.getenv("ZABBIX_TOKEN"),
-        user=os.getenv("ZABBIX_USER"),
-        password=os.getenv("ZABBIX_PASSWORD"),
+        # Whitespace-only counts as missing: it would otherwise start the server
+        # and fail every call with a confusing connection or auth error.
+        zabbix_url=env_str("ZABBIX_URL") or "",
+        token=env_str("ZABBIX_TOKEN"),
+        user=env_str("ZABBIX_USER"),
+        password=_password_from_env(),
         verify_ssl=env_bool("ZABBIX_VERIFY_SSL", default=True),
-        timeout=int(os.getenv("ZABBIX_TIMEOUT", "30")),
+        timeout=env_int("ZABBIX_TIMEOUT", 30),
         skip_version_check=env_bool("ZABBIX_SKIP_VERSION_CHECK", default=False),
         read_only_mode=env_bool("READ_ONLY_MODE", default=False),
         disabled_tags=disabled_tags,
         rate_limit_enabled=env_bool("RATE_LIMIT_ENABLED", default=False),
-        rate_limit_max_requests=int(os.getenv("RATE_LIMIT_MAX_REQUESTS", "60")),
-        rate_limit_window_minutes=int(os.getenv("RATE_LIMIT_WINDOW_MINUTES", "1")),
+        rate_limit_max_requests=env_int("RATE_LIMIT_MAX_REQUESTS", 60),
+        rate_limit_window_minutes=env_int("RATE_LIMIT_WINDOW_MINUTES", 1),
         tool_search_enabled=env_bool("TOOL_SEARCH_ENABLED", default=False),
         tool_search_strategy=(
             "regex"
             if os.getenv("TOOL_SEARCH_STRATEGY", "bm25").lower() == "regex"
             else "bm25"
         ),
-        tool_search_max_results=int(os.getenv("TOOL_SEARCH_MAX_RESULTS", "5")),
+        tool_search_max_results=env_int("TOOL_SEARCH_MAX_RESULTS", 5),
     )
 
 
 def get_transport_config_from_env() -> TransportConfig:
     """Get transport configuration from environment variables."""
-    http_bearer_token = os.getenv("MCP_HTTP_BEARER_TOKEN")
-    if http_bearer_token is not None:
-        http_bearer_token = http_bearer_token.strip() or None
-
     return TransportConfig(
         transport_type=transport_from_env(),
         http_host=http_host_from_env(),
         http_port=http_port_from_env(),
-        http_bearer_token=http_bearer_token,
+        http_bearer_token=env_str("MCP_HTTP_BEARER_TOKEN"),
     )
 
 

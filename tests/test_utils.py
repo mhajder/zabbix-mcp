@@ -1,6 +1,9 @@
 import pytest
 
 from zabbix_mcp.utils import env_bool
+from zabbix_mcp.utils import env_float
+from zabbix_mcp.utils import env_int
+from zabbix_mcp.utils import env_str
 from zabbix_mcp.utils import http_host_from_env
 from zabbix_mcp.utils import http_port_from_env
 from zabbix_mcp.utils import parse_bool
@@ -102,7 +105,9 @@ def test_http_host_from_env(monkeypatch, raw, expected):
     assert http_host_from_env() == expected
 
 
-@pytest.mark.parametrize(("raw", "expected"), [(None, 8000), ("9000", 9000)])
+@pytest.mark.parametrize(
+    ("raw", "expected"), [(None, 8000), ("9000", 9000), ("", 8000), (" 9000 ", 9000)]
+)
 def test_http_port_from_env(monkeypatch, raw, expected):
     if raw is None:
         monkeypatch.delenv("MCP_HTTP_PORT", raising=False)
@@ -113,5 +118,51 @@ def test_http_port_from_env(monkeypatch, raw, expected):
 
 def test_http_port_from_env_rejects_non_integer(monkeypatch):
     monkeypatch.setenv("MCP_HTTP_PORT", "abc")
-    with pytest.raises(ValueError, match="invalid literal for int"):
+    with pytest.raises(ValueError, match="MCP_HTTP_PORT must be an integer, got 'abc'"):
         http_port_from_env()
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"), [(None, 30), ("", 30), ("  ", 30), ("45", 45), (" 45 ", 45)]
+)
+def test_env_int_treats_blank_as_unset(monkeypatch, raw, expected):
+    if raw is None:
+        monkeypatch.delenv("ZABBIX_TEST_INT", raising=False)
+    else:
+        monkeypatch.setenv("ZABBIX_TEST_INT", raw)
+    assert env_int("ZABBIX_TEST_INT", 30) == expected
+
+
+@pytest.mark.parametrize("raw", ["abc", "1.5"])
+def test_env_int_error_names_the_variable(monkeypatch, raw):
+    monkeypatch.setenv("ZABBIX_TEST_INT", raw)
+    with pytest.raises(
+        ValueError, match=f"ZABBIX_TEST_INT must be an integer, got {raw!r}"
+    ):
+        env_int("ZABBIX_TEST_INT", 30)
+
+
+@pytest.mark.parametrize(("raw", "expected"), [(None, 1.0), ("", 1.0), ("0.25", 0.25)])
+def test_env_float_treats_blank_as_unset(monkeypatch, raw, expected):
+    if raw is None:
+        monkeypatch.delenv("ZABBIX_TEST_FLOAT", raising=False)
+    else:
+        monkeypatch.setenv("ZABBIX_TEST_FLOAT", raw)
+    assert env_float("ZABBIX_TEST_FLOAT", 1.0) == expected
+
+
+def test_env_float_error_names_the_variable(monkeypatch):
+    monkeypatch.setenv("ZABBIX_TEST_FLOAT", "half")
+    with pytest.raises(ValueError, match="ZABBIX_TEST_FLOAT must be a number"):
+        env_float("ZABBIX_TEST_FLOAT", 1.0)
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"), [(None, None), ("", None), ("   ", None), (" tok ", "tok")]
+)
+def test_env_str_strips_and_treats_blank_as_unset(monkeypatch, raw, expected):
+    if raw is None:
+        monkeypatch.delenv("ZABBIX_TEST_STR", raising=False)
+    else:
+        monkeypatch.setenv("ZABBIX_TEST_STR", raw)
+    assert env_str("ZABBIX_TEST_STR") == expected
