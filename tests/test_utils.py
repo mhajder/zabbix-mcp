@@ -93,7 +93,10 @@ def test_transport_from_env(monkeypatch, raw, expected):
         # The URL form of an IPv6 literal; uvicorn needs it bare.
         ("[::]", "::"),
         ("[fd00::5]", "fd00::5"),
-        ("", ""),
+        (" 0.0.0.0 ", "0.0.0.0"),  # noqa: S104
+        # Blank counts as unset: it must not bind every interface.
+        ("", "127.0.0.1"),
+        ("   ", "127.0.0.1"),
     ],
 )
 def test_http_host_from_env(monkeypatch, raw, expected):
