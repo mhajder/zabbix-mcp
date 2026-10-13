@@ -71,17 +71,15 @@ except Exception as e:
 
 # Create auth provider if bearer token is configured
 auth_provider = None
-if getattr(TRANSPORT_CONFIG, "http_bearer_token", None):
-    bearer_token = TRANSPORT_CONFIG.http_bearer_token
-    if bearer_token:  # Type narrowing: ensures bearer_token is str, not None
-        auth_provider = StaticTokenVerifier(
-            tokens={
-                bearer_token: {
-                    "client_id": "authenticated-client",
-                    "scopes": ["read", "write"],
-                }
+if TRANSPORT_CONFIG.http_bearer_token:
+    auth_provider = StaticTokenVerifier(
+        tokens={
+            TRANSPORT_CONFIG.http_bearer_token: {
+                "client_id": "authenticated-client",
+                "scopes": ["read", "write"],
             }
-        )
+        }
+    )
 
 # Initialize FastMCP server
 mcp = FastMCP(
@@ -116,29 +114,26 @@ async def health(_request: Request) -> PlainTextResponse:
 def configure_component_visibility() -> None:
     """Apply server-level visibility transforms for read-only and disabled tags."""
 
-    disabled_tags = getattr(ZABBIX_CONFIG, "disabled_tags", set())
-    read_only_mode = getattr(ZABBIX_CONFIG, "read_only_mode", False)
-
-    if read_only_mode:
+    if ZABBIX_CONFIG.read_only_mode:
         logger.info("Read-only mode is enabled - restricting to read-only components")
         mcp.enable(tags={"read-only"}, only=True)
 
-    if disabled_tags:
+    if ZABBIX_CONFIG.disabled_tags:
         logger.info(
             "Disabled tags configured: %s - disabling matching components",
-            disabled_tags,
+            ZABBIX_CONFIG.disabled_tags,
         )
-        mcp.disable(tags=disabled_tags)
+        mcp.disable(tags=ZABBIX_CONFIG.disabled_tags)
 
 
 def configure_tool_search() -> None:
     """Apply the optional FastMCP tool-search transform."""
 
-    if not getattr(ZABBIX_CONFIG, "tool_search_enabled", False):
+    if not ZABBIX_CONFIG.tool_search_enabled:
         return
 
-    strategy = getattr(ZABBIX_CONFIG, "tool_search_strategy", "bm25")
-    max_results = getattr(ZABBIX_CONFIG, "tool_search_max_results", 5)
+    strategy = ZABBIX_CONFIG.tool_search_strategy
+    max_results = ZABBIX_CONFIG.tool_search_max_results
 
     if strategy == "regex":
         mcp.add_transform(RegexSearchTransform(max_results=max_results))
@@ -156,7 +151,7 @@ configure_component_visibility()
 configure_tool_search()
 
 # Optional rate limiting
-if getattr(ZABBIX_CONFIG, "rate_limit_enabled", False):
+if ZABBIX_CONFIG.rate_limit_enabled:
     logger.info("Rate limiting is enabled - applying middleware")
     mcp.add_middleware(
         SlidingWindowRateLimitingMiddleware(
