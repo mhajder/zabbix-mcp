@@ -71,9 +71,9 @@ def test_env_bool(monkeypatch, raw, expected):
         ("SSE", "sse"),
         # FastMCP's name for the streamable HTTP transport.
         ("streamable-http", "http"),
-        # Only lowercased: anything else selects stdio in the server.
-        (" http ", " http "),
-        ("", ""),
+        (" http ", "http"),
+        ("", "stdio"),
+        ("   ", "stdio"),
     ],
 )
 def test_transport_from_env(monkeypatch, raw, expected):
