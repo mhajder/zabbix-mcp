@@ -373,7 +373,7 @@ Enable rate limiting by setting the following environment variables in your `.en
 
 ```env
 RATE_LIMIT_ENABLED=true
-RATE_LIMIT_MAX_REQUESTS=100   # Maximum requests allowed per window
+RATE_LIMIT_MAX_REQUESTS=60    # Maximum requests allowed per window (default: 60)
 RATE_LIMIT_WINDOW_MINUTES=1   # Window size in minutes
 ```
 
