@@ -1,11 +1,13 @@
 import asyncio
 import logging
 import os
+import time
 from typing import Any
 
 import aiohttp
-from zabbix_utils import AsyncZabbixAPI
+from zabbix_utils.aioapi import AsyncZabbixAPI
 from zabbix_utils.common import ModuleUtils
+from zabbix_utils.exceptions import APIRequestError
 from zabbix_utils.types import APIVersion
 
 from zabbix_mcp.models import TransportConfig
@@ -25,13 +27,116 @@ logger = logging.getLogger(__name__)
 # library's constructor from resolving the version itself - see _seed_api_version.
 _VERSION_CACHE_ATTR = "_AsyncZabbixAPI__version"
 
+# The error 'data' Zabbix returns for a session that expired or was removed.
+# Matched exactly: other errors echo caller input (a host named "re-login"),
+# and a substring match would take those for an expired session.
+_SESSION_LOST_ERRORS = frozenset(
+    {"session terminated, re-login, please.", "not authorised.", "not authorized."}
+)
+
+
+# Credentials zabbix_utils reads straight from the environment whenever the
+# value it was given is None - see _drop_blank_credentials.
+_CREDENTIAL_VARS = ("ZABBIX_TOKEN", "ZABBIX_USER", "ZABBIX_PASSWORD")
+
+
+# After a failed re-login, how long to return the session error instead of
+# trying again. Zabbix blocks an account after 5 failed logins in a row, so a
+# rotated password must not get one attempt per tool call.
+RELOGIN_COOLDOWN = 300.0
+
+
+def _drop_blank_credentials() -> None:
+    """Remove whitespace-only credential variables from the environment.
+
+    The config treats them as unset and passes None, but ``login()`` then falls
+    back to the raw variable, so ZABBIX_USER=" " next to a token would fail
+    every call with "Token cannot be used with username and password".
+    """
+    for name in _CREDENTIAL_VARS:
+        value = os.environ.get(name)
+        if value is not None and not value.strip():
+            del os.environ[name]
+
+
+def _is_session_lost(error: APIRequestError) -> bool:
+    """Tell whether a Zabbix API error means the login session is gone."""
+    data = getattr(error, "data", None)
+    return isinstance(data, str) and data.strip().lower() in _SESSION_LOST_ERRORS
+
+
+class _ReloggingZabbixAPI(AsyncZabbixAPI):
+    """AsyncZabbixAPI that logs in again, once, when its session has expired.
+
+    The connection is shared for the life of the server, so a user/password
+    session can outlive Zabbix's auto-logout. Zabbix rejects such a request
+    before running it, which makes resending it safe even for writes. Token
+    auth never expires this way, so it is not retried. A failed re-login is
+    not repeated for RELOGIN_COOLDOWN seconds.
+    """
+
+    def __init__(self, *args: Any, relogin: bool, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self._relogin = relogin
+        self._login_lock = asyncio.Lock()
+        self._login_generation = 0
+        self._login_failed_at: float | None = None
+
+    async def send_async_request(
+        self, method: str, params: dict | None = None, need_auth: bool = True
+    ) -> dict:
+        generation = self._login_generation
+        try:
+            return await super().send_async_request(method, params, need_auth)
+        except APIRequestError as err:
+            if not (
+                self._relogin
+                and need_auth
+                and method != "user.logout"
+                and _is_session_lost(err)
+            ):
+                raise
+            session_error = err
+
+        async with self._login_lock:
+            # Concurrent calls can all hit the expired session; only the first
+            # logs in, the rest reuse its new session.
+            if self._login_generation == generation:
+                failed_at = self._login_failed_at
+                if (
+                    failed_at is not None
+                    and time.monotonic() - failed_at < RELOGIN_COOLDOWN
+                ):
+                    raise session_error
+                logger.info("Zabbix session expired - logging in again")
+                try:
+                    await self.login()
+                except BaseException:
+                    self._login_failed_at = time.monotonic()
+                    logger.warning(
+                        "Logging in to Zabbix again failed; not retrying for %.0fs",
+                        RELOGIN_COOLDOWN,
+                    )
+                    raise
+                finally:
+                    # Bumped even on failure, so callers queued behind a failed
+                    # login do not each repeat it.
+                    self._login_generation += 1
+                self._login_failed_at = None
+        return await super().send_async_request(method, params, need_auth)
+
 
 class ZabbixClient:
-    """Async client wrapper for Zabbix API using zabbix_utils AsyncZabbixAPI."""
+    """Shared, authenticated connection to the Zabbix API.
+
+    Tools use it as ``async with ZabbixClient(config) as api``. The connection
+    is made on first use and kept until close(): building one per tool call
+    opened a new HTTP session each time and, with user/password auth, added a
+    login and a logout request to every call.
+    """
 
     _instance: "ZabbixClient | None" = None
     _initialized: bool = False
-    _task_apis: dict
 
     def __new__(cls, config: ZabbixConfig | None = None):  # noqa: ARG004
         """Create a new instance of ZabbixClient (singleton)."""
@@ -46,24 +151,29 @@ class ZabbixClient:
         if config is None:
             raise ValueError("Config must be provided for first initialization")
         self.config = config
-        self._task_apis = {}
+        self._api: Any = None
+        self._session: aiohttp.ClientSession | None = None
+        self._loop: asyncio.AbstractEventLoop | None = None
+        self._connect_lock = asyncio.Lock()
         self._initialized = True
 
     async def __aenter__(self) -> Any:
-        """Create a fresh, authenticated API instance for the current task."""
-        api, session = await self._create_fresh_api()
-        task = asyncio.current_task()
-        key = id(task) if task is not None else 0
-        self._task_apis[key] = (api, session)
-        return api
+        """Return the shared API instance, connecting on first use."""
+        loop = asyncio.get_running_loop()
+        if self._loop is not loop:
+            # A session and a lock belong to the loop that created them, so a
+            # new loop (a restarted server, a test) starts from scratch.
+            self._api = self._session = None
+            self._connect_lock = asyncio.Lock()
+            self._loop = loop
+        if self._api is None:
+            async with self._connect_lock:
+                if self._api is None:
+                    self._api, self._session = await self._create_api()
+        return self._api
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        """Log out and discard the API instance belonging to the current task."""
-        task = asyncio.current_task()
-        key = id(task) if task is not None else 0
-        entry = self._task_apis.pop(key, None)
-        if entry is not None:
-            await self._discard(*entry)
+        """Keep the connection open for the next tool call."""
         return False
 
     @staticmethod
@@ -85,8 +195,7 @@ class ZabbixClient:
         """Resolve the Zabbix API version once, without blocking the event loop.
 
         ``AsyncZabbixAPI.__init__`` resolves the version through a *synchronous*
-        ``urllib.urlopen`` call, and since a fresh instance is built per request
-        that stalls the whole loop on every tool call. That call also ignores the
+        ``urllib.urlopen`` call, which stalls the whole event loop while it waits. That call also ignores the
         configured timeout (``urlopen`` does not read ``Request.timeout``), so an
         unresponsive server hangs every session indefinitely.
 
@@ -120,21 +229,20 @@ class ZabbixClient:
         setattr(AsyncZabbixAPI, _VERSION_CACHE_ATTR, APIVersion(body["result"]))
         logger.info("Connected to Zabbix API version %s", body["result"])
 
-    async def _create_fresh_api(self) -> Any:
-        """Create and return a new, authenticated AsyncZabbixAPI instance.
+    async def _create_api(self) -> tuple[Any, aiohttp.ClientSession]:
+        """Create and log in the API instance shared by all tool calls.
 
         Returns:
-            AsyncZabbixAPI: Authenticated API instance ready for requests.
+            tuple: The authenticated API instance and its HTTP session.
         """
-        logger.debug(
-            "Creating fresh Zabbix API connection to %s", self.config.zabbix_url
-        )
+        logger.debug("Connecting to Zabbix API at %s", self.config.zabbix_url)
         await self._seed_api_version()
+        _drop_blank_credentials()
         # Supplying the session makes retries possible and hands us its
         # lifecycle: zabbix_utils only closes sessions it created itself.
         session = build_session(self.config.verify_ssl)
         try:
-            api: Any = AsyncZabbixAPI(
+            api = _ReloggingZabbixAPI(
                 url=self.config.zabbix_url,
                 token=self.config.token,
                 user=self.config.user,
@@ -143,6 +251,7 @@ class ZabbixClient:
                 timeout=self.config.timeout,
                 skip_version_check=self.config.skip_version_check,
                 client_session=session,
+                relogin=not self.config.token,
             )
             await api.login()
         except BaseException:
@@ -150,19 +259,12 @@ class ZabbixClient:
             raise
         return api, session
 
-    async def close(self):
-        """Close any lingering task-keyed API sessions."""
-        for api, session in list(self._task_apis.values()):
+    async def close(self) -> None:
+        """Log out and close the shared connection, if one was made."""
+        api, session = self._api, self._session
+        self._api = self._session = None
+        if api is not None:
             await self._discard(api, session)
-        self._task_apis.clear()
-
-    @property
-    def api(self) -> AsyncZabbixAPI | None:
-        """Return the task-local API instance, or None outside a context manager."""
-        task = asyncio.current_task()
-        key = id(task) if task is not None else 0
-        entry = self._task_apis.get(key)
-        return entry[0] if entry else None
 
 
 def _password_from_env() -> str | None:
@@ -251,16 +353,3 @@ def get_transport_config_from_env() -> TransportConfig:
         http_port=http_port,
         http_bearer_token=env_str("MCP_HTTP_BEARER_TOKEN"),
     )
-
-
-_zabbix_client_singleton: ZabbixClient | None = None
-
-
-def get_zabbix_client(config: ZabbixConfig | None = None) -> ZabbixClient:
-    """Get the singleton Zabbix client instance."""
-    global _zabbix_client_singleton
-    if _zabbix_client_singleton is None:
-        if config is None:
-            raise ValueError("Zabbix config must be provided for first initialization")
-        _zabbix_client_singleton = ZabbixClient(config)
-    return _zabbix_client_singleton

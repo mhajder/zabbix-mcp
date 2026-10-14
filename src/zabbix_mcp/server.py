@@ -7,6 +7,8 @@ Provides a Model Context Protocol (MCP) server exposing tools that interact with
 
 import logging
 import os
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version
 from urllib.parse import urlparse
@@ -27,6 +29,7 @@ from zabbix_mcp.utils import HEALTH_PATH
 from zabbix_mcp.utils import HTTP_TRANSPORTS
 from zabbix_mcp.utils import TRANSPORT_ALIASES
 from zabbix_mcp.utils import VALID_TRANSPORTS
+from zabbix_mcp.zabbix_client import ZabbixClient
 from zabbix_mcp.zabbix_client import get_transport_config_from_env
 from zabbix_mcp.zabbix_client import get_zabbix_config_from_env
 
@@ -83,6 +86,20 @@ if TRANSPORT_CONFIG.http_bearer_token:
         }
     )
 
+
+@asynccontextmanager
+async def zabbix_lifespan(_server: FastMCP) -> AsyncGenerator[dict]:
+    """Log out of Zabbix when the server stops.
+
+    Tools share one Zabbix connection that is never closed per call, so without
+    this a user/password login would linger until Zabbix's auto-logout.
+    """
+    try:
+        yield {}
+    finally:
+        await ZabbixClient(ZABBIX_CONFIG).close()
+
+
 # Initialize FastMCP server
 mcp = FastMCP(
     name="Zabbix MCP Server",
@@ -94,6 +111,7 @@ mcp = FastMCP(
         "events, users, proxies, maintenance periods, and more."
     ),
     auth=auth_provider,
+    lifespan=zabbix_lifespan,
 )
 
 # Register all tools
