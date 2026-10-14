@@ -48,6 +48,13 @@ def register_items_tools(mcp, config: ZabbixConfig):
                 description="Shortcut to search for items by key (constructs search={'key_': item_key_contains}).",
             ),
         ] = None,
+        webitems: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, also return web scenario items (webitems=true), which Zabbix leaves out by default.",
+            ),
+        ] = False,
         output: Annotated[str | list[str], Field(default="extend")] = "extend",
         limit: Annotated[
             int,
@@ -120,6 +127,8 @@ def register_items_tools(mcp, config: ZabbixConfig):
             filter_params: Additional filter parameters for advanced filtering.
             item_name_contains: Shortcut to search for items by name (adds to 'search').
             item_key_contains: Shortcut to search for items by key (adds to 'search').
+            webitems: If true, also return the items of web scenarios (keys such as
+                     web.test.fail or web.page.rspcode), e.g. to read their history.
             limit: Maximum number of results to return (default 100). Set higher for more results.
             offset: Number of matching records to skip, for paging.
             select_hosts: If true, include the hosts each item belongs to.
@@ -156,6 +165,8 @@ def register_items_tools(mcp, config: ZabbixConfig):
                 filters["groupids"] = groupids
             if templateids is not None:
                 filters["templateids"] = templateids
+            if webitems:
+                filters["webitems"] = True
             _search = dict(search) if search is not None else {}
             if item_name_contains is not None:
                 _search["name"] = item_name_contains

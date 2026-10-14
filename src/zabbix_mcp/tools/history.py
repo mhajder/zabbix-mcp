@@ -32,7 +32,10 @@ async def _detect_value_type(api: Any, itemids: list[str]) -> int:
         ValueError: If the items do not exist, or mix value types, in which case
             no single history table can serve them all.
     """
-    items = await api.item.get(itemids=itemids, output=["itemid", "value_type"])
+    # item.get leaves web scenario items out unless asked for them.
+    items = await api.item.get(
+        itemids=itemids, output=["itemid", "value_type"], webitems=True
+    )
     value_types = {int(item["value_type"]) for item in items}
     if not value_types:
         raise ValueError(f"No items found for itemids {itemids}.")
@@ -95,7 +98,8 @@ def register_history_tools(mcp, config: ZabbixConfig):
         collected data points with timestamps, allowing detailed analysis of system behavior over time.
 
         Args:
-            itemids: List of item IDs to get history for. Required. Find items with item_get.
+            itemids: List of item IDs to get history for. Required. Find items with item_get
+                    (webitems=True for web scenario items).
             history: Which history table to read. Zabbix stores each item's values in the
                     table matching its value_type, and reading the wrong one returns an
                     empty list rather than an error - so this must agree with the items.
@@ -194,7 +198,8 @@ def register_history_tools(mcp, config: ZabbixConfig):
         statistical information for long-term analysis.
 
         Args:
-            itemids: List of item IDs to get trends for. Required. Find items with item_get.
+            itemids: List of item IDs to get trends for. Required. Find items with item_get
+                    (webitems=True for web scenario items).
             time_from: Unix timestamp to get trends from this time onwards.
             time_till: Unix timestamp to get trends up to this time.
             limit: Maximum number of results to return (default 100). Set higher for more results.
