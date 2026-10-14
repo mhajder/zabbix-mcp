@@ -354,7 +354,7 @@ def register_hosts_tools(mcp, config: ZabbixConfig):
         tags={"zabbix", "host"},
         annotations={
             "readOnlyHint": False,
-            "destructiveHint": False,
+            "destructiveHint": True,
             "idempotentHint": True,
         },
     )
@@ -373,20 +373,51 @@ def register_hosts_tools(mcp, config: ZabbixConfig):
         description: Annotated[
             str | None, Field(default=None, description="New description.")
         ] = None,
+        templates: Annotated[
+            list[dict[str, str]] | None,
+            Field(
+                default=None,
+                description="Replaces ALL linked templates (e.g., [{'templateid': '10001'}]). Templates left out are unlinked; their items and triggers stay on the host.",
+            ),
+        ] = None,
+        templates_clear: Annotated[
+            list[dict[str, str]] | None,
+            Field(
+                default=None,
+                description="Templates to unlink AND clear - their items, triggers and collected data are deleted from the host.",
+            ),
+        ] = None,
+        proxyid: Annotated[
+            str | None,
+            Field(
+                default=None,
+                description="Proxy to monitor the host through. '0' moves monitoring back to the Zabbix server; blank leaves it unchanged.",
+            ),
+        ] = None,
     ) -> dict:
         """
         Update an existing host in Zabbix.
 
         Modifies properties of an existing host. You can change the technical name,
-        visible name, status (enable/disable monitoring), or description. Only specify
-        the fields you want to change.
+        visible name, status (enable/disable monitoring), description, linked templates,
+        or the proxy that monitors it. Only specify the fields you want to change.
 
         Args:
             hostid: ID of the host to update (required). Find it with host_get.
-            host: New technical name for the host.
+            host: New technical name for the host. A blank value is ignored.
             name: New visible name for display.
             status: New status: 0=enabled (monitored), 1=disabled (not monitored).
             description: New description text.
+            templates: The complete new list of linked templates. To add one, pass the
+                      current ones (host_get with select_templates=True) plus the new
+                      one; any template left out is unlinked, keeping its items and
+                      triggers on the host.
+            templates_clear: Templates to unlink and clear. Their items, triggers and
+                      collected history are deleted from the host - this cannot be undone.
+            proxyid: ID of the proxy to monitor the host through (find it with
+                    proxy_get), or '0' for the Zabbix server. Sent as monitored_by/proxyid
+                    on Zabbix 7.0+ and as proxy_hostid on older versions. A blank value
+                    is ignored and leaves the proxy unchanged.
 
         Returns:
             dict: Contains 'hostids' list with updated host IDs and 'success' flag.
@@ -394,16 +425,35 @@ def register_hosts_tools(mcp, config: ZabbixConfig):
         try:
             await ctx.info(f"Updating host {hostid}...")
             params: dict[str, Any] = {"hostid": hostid}
-            if host:
+            # A blank host can never be valid, so it is treated as not given
+            # rather than failing the other changes in the same call.
+            if host is not None and host.strip():
                 params["host"] = host
-            if name:
+            if name is not None:
                 params["name"] = name
             if status is not None:
                 params["status"] = status
-            if description:
+            if description is not None:
                 params["description"] = description
+            if templates is not None:
+                params["templates"] = templates
+            if templates_clear is not None:
+                params["templates_clear"] = templates_clear
+            # Blank means not given: clients that fill unused fields with ""
+            # must not move the host off its proxy. Only '0' does that.
+            target_proxy = (proxyid or "").strip() or None
 
             async with ZabbixClient(config) as api:
+                if target_proxy is not None:
+                    if api.version < 7.0:
+                        # Before 7.0 the field is proxy_hostid, and monitored_by
+                        # is rejected as an unexpected parameter.
+                        params["proxy_hostid"] = target_proxy
+                    else:
+                        # Zabbix 7.0 needs monitored_by alongside the proxy:
+                        # 1 = proxy, 0 = server, which only accepts proxyid '0'.
+                        params["monitored_by"] = 0 if target_proxy == "0" else 1
+                        params["proxyid"] = target_proxy
                 result = await api.host.update(**params)
                 return {"hostids": result.get("hostids", []), "success": True}
         except Exception as e:
