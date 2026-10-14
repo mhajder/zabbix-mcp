@@ -140,7 +140,8 @@ def register_templates_tools(mcp, config: ZabbixConfig):
                   - name: Template name (e.g., 'Linux Server Template')
                   - description: Optional template description
 
-        Note: Use host_create or host_update with templateids to apply templates to hosts.
+        Note: Link templates to a new host with host_create's 'templates' argument, or to an
+              existing one with host_update's 'templates' argument.
         """
         try:
             await ctx.info("Retrieving templates...")
@@ -234,7 +235,8 @@ def register_templates_tools(mcp, config: ZabbixConfig):
             dict: Contains 'templateids' list with newly created template ID(s) and 'success' flag.
 
         Note: After creating a template, add items, triggers, and graphs to it using respective APIs.
-              Then apply to hosts with host_update using the templateid.
+              Then link it to hosts with the 'templates' argument of host_create or
+              host_update.
         """
         try:
             await ctx.info(f"Creating template '{host}'...")

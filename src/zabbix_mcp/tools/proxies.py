@@ -92,7 +92,10 @@ def register_proxies_tools(mcp, config: ZabbixConfig):
                     the old 'status' field (5=active, 6=passive) with this one.
 
         Note: Use proxy_create to add new proxies, proxy_delete to remove them.
-              Assign hosts to proxies with host_create or host_update using proxyid field.
+              Move an existing host to a proxy with host_update's 'proxyid' argument. For
+              a new host, pass host_create a full 'params' dict that includes
+              {'monitored_by': 1, 'proxyid': '...'} on Zabbix 7.0+, or
+              {'proxy_hostid': '...'} on 6.x.
         """
         try:
             await ctx.info("Retrieving proxies...")
@@ -164,8 +167,10 @@ def register_proxies_tools(mcp, config: ZabbixConfig):
         Returns:
             dict: Contains 'proxyids' list with newly created proxy ID(s) and 'success' flag.
 
-        Note: After creating, configure the proxy agent on the remote system and assign hosts
-              to it using host_create or host_update with the proxyid.
+        Note: After creating, configure the proxy agent on the remote system and move hosts
+              to it with host_update's 'proxyid' argument. For a new host, pass
+              host_create a full 'params' dict that includes {'monitored_by': 1, 'proxyid': '...'}
+              on Zabbix 7.0+, or {'proxy_hostid': '...'} on 6.x.
         """
         try:
             await ctx.info(f"Creating proxy '{name}'...")
