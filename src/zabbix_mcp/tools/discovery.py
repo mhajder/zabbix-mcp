@@ -76,9 +76,9 @@ def register_discovery_tools(mcp, config: ZabbixConfig):
         They enable dynamic host and item management without manual configuration.
 
         Args:
-            itemids: List of item IDs (discovery rules are items) to get.
-            hostids: List of host IDs to get discovery rules from.
-            templateids: List of template IDs to get discovery rules from.
+            itemids: List of item IDs (discovery rules are items) to get. An empty list matches none.
+            hostids: List of host IDs to get discovery rules from. An empty list matches none.
+            templateids: List of template IDs to get discovery rules from. An empty list matches none.
             search: Dictionary with search criteria like {'name': 'SNMP'}.
             filter_params: Additional filter parameters for advanced filtering.
             limit: Maximum number of results to return (default 100). Set higher for more results.
@@ -103,11 +103,11 @@ def register_discovery_tools(mcp, config: ZabbixConfig):
             sort: dict[str, Any] = {"sortfield": sortfield, "sortorder": sortorder}
             filters: dict[str, Any] = {}
             shape: dict[str, Any] = {"output": output}
-            if itemids:
+            if itemids is not None:
                 filters["itemids"] = itemids
-            if hostids:
+            if hostids is not None:
                 filters["hostids"] = hostids
-            if templateids:
+            if templateids is not None:
                 filters["templateids"] = templateids
             if search:
                 filters["search"] = search
@@ -194,7 +194,7 @@ def register_discovery_tools(mcp, config: ZabbixConfig):
         They can scan for active devices, open ports, and available services in CIDR ranges.
 
         Args:
-            druleids: List of network discovery rule IDs to get. If empty, returns all rules.
+            druleids: List of network discovery rule IDs to get. Omit to return all rules; an empty list matches none.
             search: Dictionary with search criteria like {'name': 'LAN'}.
             filter_params: Additional filter parameters for advanced filtering.
             limit: Maximum number of results to return (default 100). Set higher for more results.
@@ -218,7 +218,7 @@ def register_discovery_tools(mcp, config: ZabbixConfig):
             sort: dict[str, Any] = {"sortfield": sortfield, "sortorder": sortorder}
             filters: dict[str, Any] = {}
             shape: dict[str, Any] = {"output": output}
-            if druleids:
+            if druleids is not None:
                 filters["druleids"] = druleids
             if search:
                 filters["search"] = search

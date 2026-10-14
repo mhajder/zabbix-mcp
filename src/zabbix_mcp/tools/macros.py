@@ -80,10 +80,10 @@ def register_macros_tools(mcp, config: ZabbixConfig):
         They allow parameterization of monitoring configurations with custom values.
 
         Args:
-            hostmacroids: List of host macro IDs to get.
-            globalmacroids: List of global macro IDs to get.
-            hostids: List of host IDs to get macros from.
-            templateids: List of template IDs to get macros from.
+            hostmacroids: List of host macro IDs to get. An empty list matches none.
+            globalmacroids: List of global macro IDs to get. An empty list matches none.
+            hostids: List of host IDs to get macros from. An empty list matches none.
+            templateids: List of template IDs to get macros from. An empty list matches none.
             globalmacro: If true, return global macros (available to all hosts).
             search: Dictionary with search criteria like {'macro': '{$THRESHOLD}'}.
             filter_params: Additional filter parameters for advanced filtering.
@@ -109,13 +109,13 @@ def register_macros_tools(mcp, config: ZabbixConfig):
             sort: dict[str, Any] = {"sortfield": sortfield, "sortorder": sortorder}
             filters: dict[str, Any] = {}
             shape: dict[str, Any] = {"output": output}
-            if hostmacroids:
+            if hostmacroids is not None:
                 filters["hostmacroids"] = hostmacroids
-            if globalmacroids:
+            if globalmacroids is not None:
                 filters["globalmacroids"] = globalmacroids
-            if hostids:
+            if hostids is not None:
                 filters["hostids"] = hostids
-            if templateids:
+            if templateids is not None:
                 filters["templateids"] = templateids
             if globalmacro:
                 filters["globalmacro"] = globalmacro

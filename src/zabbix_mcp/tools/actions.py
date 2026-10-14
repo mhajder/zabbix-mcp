@@ -76,9 +76,9 @@ def register_actions_tools(mcp, config: ZabbixConfig):
         problems occur - sending notifications, executing remote commands, etc.
 
         Args:
-            actionids: List of action IDs to get. If empty, returns all actions.
-            groupids: List of host group IDs to get actions for.
-            hostids: List of host IDs to get actions for.
+            actionids: List of action IDs to get. Omit to return all actions; an empty list matches none.
+            groupids: List of host group IDs to get actions for. An empty list matches none.
+            hostids: List of host IDs to get actions for. An empty list matches none.
             search: Dictionary with search criteria like {'name': 'notify'}.
             filter_params: Additional filter parameters for advanced filtering.
             limit: Maximum number of results to return (default 100). Set higher for more results.
@@ -103,11 +103,11 @@ def register_actions_tools(mcp, config: ZabbixConfig):
             sort: dict[str, Any] = {"sortfield": sortfield, "sortorder": sortorder}
             filters: dict[str, Any] = {}
             shape: dict[str, Any] = {"output": output}
-            if actionids:
+            if actionids is not None:
                 filters["actionids"] = actionids
-            if groupids:
+            if groupids is not None:
                 filters["groupids"] = groupids
-            if hostids:
+            if hostids is not None:
                 filters["hostids"] = hostids
             if search:
                 filters["search"] = search

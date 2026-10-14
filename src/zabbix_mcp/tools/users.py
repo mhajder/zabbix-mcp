@@ -74,7 +74,7 @@ def register_users_tools(mcp, config: ZabbixConfig):
         credentials and permission level determining what they can view and modify.
 
         Args:
-            userids: List of user IDs to get. If empty, returns all users.
+            userids: List of user IDs to get. Omit to return all users; an empty list matches none.
             search: Dictionary with search criteria like {'username': 'admin'}. Zabbix 5.4
                     renamed 'alias' to 'username' and rejects the old name.
             filter_params: Additional filter parameters for advanced filtering.
@@ -102,7 +102,7 @@ def register_users_tools(mcp, config: ZabbixConfig):
             sort: dict[str, Any] = {"sortfield": sortfield, "sortorder": sortorder}
             filters: dict[str, Any] = {}
             shape: dict[str, Any] = {"output": output}
-            if userids:
+            if userids is not None:
                 filters["userids"] = userids
             if search:
                 filters["search"] = search

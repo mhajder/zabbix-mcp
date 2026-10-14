@@ -97,9 +97,9 @@ def register_graphs_tools(mcp, config: ZabbixConfig):
         Graphs can be included in dashboards, reports, and custom views for data analysis.
 
         Args:
-            graphids: List of graph IDs to get. If empty, returns all graphs.
-            hostids: List of host IDs to get graphs from.
-            templateids: List of template IDs to get graphs from.
+            graphids: List of graph IDs to get. Omit to return all graphs; an empty list matches none.
+            hostids: List of host IDs to get graphs from. An empty list matches none.
+            templateids: List of template IDs to get graphs from. An empty list matches none.
             search: Dictionary with search criteria like {'name': 'CPU'}.
             filter_params: Additional filter parameters for advanced filtering.
             limit: Maximum number of results to return (default 100). Set higher for more results.
@@ -126,11 +126,11 @@ def register_graphs_tools(mcp, config: ZabbixConfig):
             sort: dict[str, Any] = {"sortfield": sortfield, "sortorder": sortorder}
             filters: dict[str, Any] = {}
             shape: dict[str, Any] = {"output": output}
-            if graphids:
+            if graphids is not None:
                 filters["graphids"] = graphids
-            if hostids:
+            if hostids is not None:
                 filters["hostids"] = hostids
-            if templateids:
+            if templateids is not None:
                 filters["templateids"] = templateids
             if search:
                 filters["search"] = search

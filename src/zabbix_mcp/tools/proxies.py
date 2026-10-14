@@ -74,7 +74,7 @@ def register_proxies_tools(mcp, config: ZabbixConfig):
         without direct connectivity. Proxies collect data locally and report to the Zabbix server.
 
         Args:
-            proxyids: List of proxy IDs to get. If empty, returns all proxies.
+            proxyids: List of proxy IDs to get. Omit to return all proxies; an empty list matches none.
             search: Dictionary with search criteria like {'name': 'proxy1'}. Zabbix 7.0
                     renamed the proxy 'host' field to 'name' and rejects the old one.
             filter_params: Additional filter parameters for advanced filtering.
@@ -101,7 +101,7 @@ def register_proxies_tools(mcp, config: ZabbixConfig):
             sort: dict[str, Any] = {"sortfield": sortfield, "sortorder": sortorder}
             filters: dict[str, Any] = {}
             shape: dict[str, Any] = {"output": output}
-            if proxyids:
+            if proxyids is not None:
                 filters["proxyids"] = proxyids
             if search:
                 filters["search"] = search

@@ -75,8 +75,8 @@ def register_services_tools(mcp, config: ZabbixConfig):
         Services can depend on other services, creating hierarchies for tracking dependencies.
 
         Args:
-            serviceids: List of service IDs to get. If empty, returns all services.
-            parentids: List of parent service IDs to get child services from.
+            serviceids: List of service IDs to get. Omit to return all services; an empty list matches none.
+            parentids: List of parent service IDs to get child services from. An empty list matches none.
             search: Dictionary with search criteria like {'name': 'API'}.
             filter_params: Additional filter parameters for advanced filtering.
             limit: Maximum number of results to return (default 100). Set higher for more results.
@@ -100,9 +100,9 @@ def register_services_tools(mcp, config: ZabbixConfig):
             sort: dict[str, Any] = {"sortfield": sortfield, "sortorder": sortorder}
             filters: dict[str, Any] = {}
             shape: dict[str, Any] = {"output": output}
-            if serviceids:
+            if serviceids is not None:
                 filters["serviceids"] = serviceids
-            if parentids:
+            if parentids is not None:
                 filters["parentids"] = parentids
             if search:
                 filters["search"] = search

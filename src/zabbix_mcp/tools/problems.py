@@ -111,10 +111,10 @@ def register_problems_tools(mcp, config: ZabbixConfig):
         Each problem is associated with a trigger and can be acknowledged by operators.
 
         Args:
-            eventids: List of event IDs to get problems for. If empty, returns all problems.
-            groupids: List of host group IDs to get problems from.
-            hostids: List of host IDs to get problems from.
-            objectids: List of trigger IDs to get problems from.
+            eventids: List of event IDs to get problems for. Omit to return all problems; an empty list matches none.
+            groupids: List of host group IDs to get problems from. An empty list matches none.
+            hostids: List of host IDs to get problems from. An empty list matches none.
+            objectids: List of trigger IDs to get problems from. An empty list matches none.
             time_from: Unix timestamp to filter problems from this time onwards.
             time_till: Unix timestamp to filter problems up to this time.
             recent: If true, only return recently recovered problems.
@@ -147,13 +147,13 @@ def register_problems_tools(mcp, config: ZabbixConfig):
             sort: dict[str, Any] = {"sortfield": sortfield, "sortorder": sortorder}
             filters: dict[str, Any] = {}
             shape: dict[str, Any] = {"output": output}
-            if eventids:
+            if eventids is not None:
                 filters["eventids"] = eventids
-            if groupids:
+            if groupids is not None:
                 filters["groupids"] = groupids
-            if hostids:
+            if hostids is not None:
                 filters["hostids"] = hostids
-            if objectids:
+            if objectids is not None:
                 filters["objectids"] = objectids
             if time_from:
                 filters["time_from"] = time_from
@@ -296,10 +296,10 @@ def register_problems_tools(mcp, config: ZabbixConfig):
         can be acknowledged to show operators have seen the alert.
 
         Args:
-            eventids: List of event IDs to get. If empty, returns all events.
-            groupids: List of host group IDs to get events from.
-            hostids: List of host IDs to get events from.
-            objectids: List of trigger IDs to get events from.
+            eventids: List of event IDs to get. Omit to return all events; an empty list matches none.
+            groupids: List of host group IDs to get events from. An empty list matches none.
+            hostids: List of host IDs to get events from. An empty list matches none.
+            objectids: List of trigger IDs to get events from. An empty list matches none.
             time_from: Unix timestamp to filter events from this time onwards.
             time_till: Unix timestamp to filter events up to this time.
             limit: Maximum number of results to return (default 100). Set higher for more results.
@@ -330,13 +330,13 @@ def register_problems_tools(mcp, config: ZabbixConfig):
             sort: dict[str, Any] = {"sortfield": sortfield, "sortorder": sortorder}
             filters: dict[str, Any] = {}
             shape: dict[str, Any] = {"output": output}
-            if eventids:
+            if eventids is not None:
                 filters["eventids"] = eventids
-            if groupids:
+            if groupids is not None:
                 filters["groupids"] = groupids
-            if hostids:
+            if hostids is not None:
                 filters["hostids"] = hostids
-            if objectids:
+            if objectids is not None:
                 filters["objectids"] = objectids
             if time_from:
                 filters["time_from"] = time_from

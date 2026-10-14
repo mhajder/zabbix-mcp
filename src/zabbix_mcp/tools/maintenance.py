@@ -126,9 +126,9 @@ def register_maintenance_tools(mcp, config: ZabbixConfig):
         maintenance, or testing. Alerts are suppressed during maintenance periods.
 
         Args:
-            maintenanceids: List of maintenance IDs to get. If empty, returns all maintenance periods.
-            groupids: List of host group IDs to get maintenance for.
-            hostids: List of host IDs to get maintenance for.
+            maintenanceids: List of maintenance IDs to get. Omit to return all maintenance periods; an empty list matches none.
+            groupids: List of host group IDs to get maintenance for. An empty list matches none.
+            hostids: List of host IDs to get maintenance for. An empty list matches none.
             limit: Maximum number of results to return (default 100). Set higher for more results.
             offset: Number of matching records to skip, for paging.
 
@@ -151,11 +151,11 @@ def register_maintenance_tools(mcp, config: ZabbixConfig):
             sort: dict[str, Any] = {"sortfield": sortfield, "sortorder": sortorder}
             filters: dict[str, Any] = {}
             shape: dict[str, Any] = {"output": output}
-            if maintenanceids:
+            if maintenanceids is not None:
                 filters["maintenanceids"] = maintenanceids
-            if groupids:
+            if groupids is not None:
                 filters["groupids"] = groupids
-            if hostids:
+            if hostids is not None:
                 filters["hostids"] = hostids
 
             async with ZabbixClient(config) as api:

@@ -98,10 +98,10 @@ def register_triggers_tools(mcp, config: ZabbixConfig):
         expressions against collected metrics and transition between problem and normal states.
 
         Args:
-            triggerids: List of trigger IDs to get. If empty, returns all triggers.
-            hostids: List of host IDs to get triggers from.
-            groupids: List of group IDs to get triggers from hosts in those groups.
-            templateids: List of template IDs to get triggers from those templates.
+            triggerids: List of trigger IDs to get. Omit to return all triggers; an empty list matches none.
+            hostids: List of host IDs to get triggers from. An empty list matches none.
+            groupids: List of group IDs to get triggers from hosts in those groups. An empty list matches none.
+            templateids: List of template IDs to get triggers from those templates. An empty list matches none.
             search: Dictionary with search criteria like {'description': 'CPU'}.
             filter_params: Additional filter parameters for advanced filtering.
             description_contains: Shortcut to search for triggers by description (name) (adds to 'search').
@@ -134,13 +134,13 @@ def register_triggers_tools(mcp, config: ZabbixConfig):
             sort: dict[str, Any] = {"sortfield": sortfield, "sortorder": sortorder}
             filters: dict[str, Any] = {}
             shape: dict[str, Any] = {"output": output}
-            if triggerids:
+            if triggerids is not None:
                 filters["triggerids"] = triggerids
-            if hostids:
+            if hostids is not None:
                 filters["hostids"] = hostids
-            if groupids:
+            if groupids is not None:
                 filters["groupids"] = groupids
-            if templateids:
+            if templateids is not None:
                 filters["templateids"] = templateids
             _search = dict(search) if search is not None else {}
             if description_contains is not None:

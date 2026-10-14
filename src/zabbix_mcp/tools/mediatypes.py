@@ -74,7 +74,7 @@ def register_mediatypes_tools(mcp, config: ZabbixConfig):
         Actions use media types to deliver alerts to users and integrations.
 
         Args:
-            mediatypeids: List of media type IDs to get. If empty, returns all media types.
+            mediatypeids: List of media type IDs to get. Omit to return all media types; an empty list matches none.
             search: Dictionary with search criteria like {'name': 'Email'}. Zabbix 5.4
                     renamed the media type 'description' field to 'name'.
             filter_params: Additional filter parameters for advanced filtering.
@@ -99,7 +99,7 @@ def register_mediatypes_tools(mcp, config: ZabbixConfig):
             sort: dict[str, Any] = {"sortfield": sortfield, "sortorder": sortorder}
             filters: dict[str, Any] = {}
             shape: dict[str, Any] = {"output": output}
-            if mediatypeids:
+            if mediatypeids is not None:
                 filters["mediatypeids"] = mediatypeids
             if search:
                 filters["search"] = search

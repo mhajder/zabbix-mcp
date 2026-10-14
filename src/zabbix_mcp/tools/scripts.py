@@ -76,9 +76,9 @@ def register_scripts_tools(mcp, config: ZabbixConfig):
         They can be triggered manually or by actions to automate remediation or configuration tasks.
 
         Args:
-            scriptids: List of script IDs to get. If empty, returns all scripts.
-            hostids: List of host IDs to get scripts for.
-            groupids: List of group IDs to get scripts for hosts in those groups.
+            scriptids: List of script IDs to get. Omit to return all scripts; an empty list matches none.
+            hostids: List of host IDs to get scripts for. An empty list matches none.
+            groupids: List of group IDs to get scripts for hosts in those groups. An empty list matches none.
             search: Dictionary with search criteria like {'name': 'restart'}.
             filter_params: Additional filter parameters for advanced filtering.
             limit: Maximum number of results to return (default 100). Set higher for more results.
@@ -102,11 +102,11 @@ def register_scripts_tools(mcp, config: ZabbixConfig):
             sort: dict[str, Any] = {"sortfield": sortfield, "sortorder": sortorder}
             filters: dict[str, Any] = {}
             shape: dict[str, Any] = {"output": output}
-            if scriptids:
+            if scriptids is not None:
                 filters["scriptids"] = scriptids
-            if hostids:
+            if hostids is not None:
                 filters["hostids"] = hostids
-            if groupids:
+            if groupids is not None:
                 filters["groupids"] = groupids
             if search:
                 filters["search"] = search

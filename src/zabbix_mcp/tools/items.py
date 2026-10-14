@@ -112,10 +112,10 @@ def register_items_tools(mcp, config: ZabbixConfig):
         (protocol, interval, etc.). Each item produces a stream of values over time.
 
         Args:
-            itemids: List of item IDs to get. If empty, returns all items.
-            hostids: List of host IDs to get items from. Filters items by host.
-            groupids: List of group IDs to get items from hosts in those groups.
-            templateids: List of template IDs to get items from those templates.
+            itemids: List of item IDs to get. Omit to return all items; an empty list matches none.
+            hostids: List of host IDs to get items from. Filters items by host. An empty list matches none.
+            groupids: List of group IDs to get items from hosts in those groups. An empty list matches none.
+            templateids: List of template IDs to get items from those templates. An empty list matches none.
             search: Dictionary with search criteria like {'name': 'CPU'} for substring matching.
             filter_params: Additional filter parameters for advanced filtering.
             item_name_contains: Shortcut to search for items by name (adds to 'search').
@@ -148,13 +148,13 @@ def register_items_tools(mcp, config: ZabbixConfig):
             sort: dict[str, Any] = {"sortfield": sortfield, "sortorder": sortorder}
             filters: dict[str, Any] = {}
             shape: dict[str, Any] = {"output": output}
-            if itemids:
+            if itemids is not None:
                 filters["itemids"] = itemids
-            if hostids:
+            if hostids is not None:
                 filters["hostids"] = hostids
-            if groupids:
+            if groupids is not None:
                 filters["groupids"] = groupids
-            if templateids:
+            if templateids is not None:
                 filters["templateids"] = templateids
             _search = dict(search) if search is not None else {}
             if item_name_contains is not None:
@@ -454,9 +454,9 @@ def register_items_tools(mcp, config: ZabbixConfig):
         dynamically based on discovered entities.
 
         Args:
-            itemids: List of item prototype IDs to get.
-            hostids: List of host IDs to get item prototypes from.
-            discoveryids: List of discovery rule IDs to get prototypes from.
+            itemids: List of item prototype IDs to get. An empty list matches none.
+            hostids: List of host IDs to get item prototypes from. An empty list matches none.
+            discoveryids: List of discovery rule IDs to get prototypes from. An empty list matches none.
             search: Dictionary with search criteria like {'name': 'CPU'}.
             filter_params: Additional filter parameters for advanced filtering.
             limit: Maximum number of results to return (default 100). Set higher for more results.
@@ -481,11 +481,11 @@ def register_items_tools(mcp, config: ZabbixConfig):
             sort: dict[str, Any] = {"sortfield": sortfield, "sortorder": sortorder}
             filters: dict[str, Any] = {}
             shape: dict[str, Any] = {"output": output}
-            if itemids:
+            if itemids is not None:
                 filters["itemids"] = itemids
-            if hostids:
+            if hostids is not None:
                 filters["hostids"] = hostids
-            if discoveryids:
+            if discoveryids is not None:
                 filters["discoveryids"] = discoveryids
             if search:
                 filters["search"] = search

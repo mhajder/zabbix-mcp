@@ -30,19 +30,31 @@ def register_hosts_tools(mcp, config: ZabbixConfig):
         ctx: Context,
         hostids: Annotated[
             list[str] | None,
-            Field(default=None, description="List of host IDs to retrieve."),
+            Field(
+                default=None,
+                description="List of host IDs to retrieve. An empty list matches none.",
+            ),
         ] = None,
         groupids: Annotated[
             list[str] | None,
-            Field(default=None, description="List of host group IDs to filter by."),
+            Field(
+                default=None,
+                description="List of host group IDs to filter by. An empty list matches none.",
+            ),
         ] = None,
         templateids: Annotated[
             list[str] | None,
-            Field(default=None, description="List of template IDs to filter by."),
+            Field(
+                default=None,
+                description="List of template IDs to filter by. An empty list matches none.",
+            ),
         ] = None,
         proxyids: Annotated[
             list[str] | None,
-            Field(default=None, description="List of proxy IDs to filter by."),
+            Field(
+                default=None,
+                description="List of proxy IDs to filter by. An empty list matches none.",
+            ),
         ] = None,
         search: Annotated[
             dict[str, str] | None,
@@ -147,10 +159,10 @@ def register_hosts_tools(mcp, config: ZabbixConfig):
         which hosts are available in your monitoring system.
 
         Args:
-            hostids: Specific host IDs to retrieve. If empty, retrieves all hosts.
-            groupids: Filter hosts by group membership (host must belong to these groups).
-            templateids: Filter hosts that use specific templates.
-            proxyids: Filter hosts assigned to specific proxies.
+            hostids: Specific host IDs to retrieve. Omit to return all hosts; an empty list matches none.
+            groupids: Filter hosts by group membership (host must belong to these groups). An empty list matches none.
+            templateids: Filter hosts that use specific templates. An empty list matches none.
+            proxyids: Filter hosts assigned to specific proxies. An empty list matches none.
             search: Search pattern for host name. If no additional options are given, this will perform a 'LIKE "%...%"' search.
             filter_params: Exact match filter (e.g., {'status': '0'} for enabled hosts).
             hostname_contains: Shortcut to search for hosts by name (adds to 'search').
@@ -184,13 +196,13 @@ def register_hosts_tools(mcp, config: ZabbixConfig):
                 "sortorder": sortorder,
             }
             filters: dict[str, Any] = {}
-            if hostids:
+            if hostids is not None:
                 filters["hostids"] = hostids
-            if groupids:
+            if groupids is not None:
                 filters["groupids"] = groupids
-            if templateids:
+            if templateids is not None:
                 filters["templateids"] = templateids
-            if proxyids:
+            if proxyids is not None:
                 filters["proxyids"] = proxyids
             _search = dict(search) if search is not None else {}
             if hostname_contains is not None:
@@ -450,10 +462,12 @@ def register_hosts_tools(mcp, config: ZabbixConfig):
     async def hostgroup_get(
         ctx: Context,
         groupids: Annotated[
-            list[str] | None, Field(default=None, description="Group IDs.")
+            list[str] | None,
+            Field(default=None, description="Group IDs. An empty list matches none."),
         ] = None,
         hostids: Annotated[
-            list[str] | None, Field(default=None, description="Host IDs.")
+            list[str] | None,
+            Field(default=None, description="Host IDs. An empty list matches none."),
         ] = None,
         search: Annotated[
             dict[str, str] | None, Field(default=None, description="Search.")
@@ -518,8 +532,9 @@ def register_hosts_tools(mcp, config: ZabbixConfig):
         windows to multiple hosts at once.
 
         Args:
-            groupids: List of host group IDs to get. If empty, returns all groups.
+            groupids: List of host group IDs to get. Omit to return all groups; an empty list matches none.
                       Find group IDs with a search or from existing hosts.
+            hostids: Return only groups containing these hosts. An empty list matches none.
             search: Substring search in group name. Matches partial names like 'Web' finds 'Web Servers'.
                     Case-sensitive partial match.
             group_name_contains: Shortcut to search for groups by name (adds to 'search').
@@ -544,9 +559,9 @@ def register_hosts_tools(mcp, config: ZabbixConfig):
             sort: dict[str, Any] = {"sortfield": sortfield, "sortorder": sortorder}
             filters: dict[str, Any] = {}
             shape: dict[str, Any] = {"output": output}
-            if groupids:
+            if groupids is not None:
                 filters["groupids"] = groupids
-            if hostids:
+            if hostids is not None:
                 filters["hostids"] = hostids
             _search = dict(search) if search is not None else {}
             if group_name_contains is not None:

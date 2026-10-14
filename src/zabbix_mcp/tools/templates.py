@@ -117,8 +117,10 @@ def register_templates_tools(mcp, config: ZabbixConfig):
         They standardize monitoring across multiple servers with the same role.
 
         Args:
-            templateids: List of template IDs to get. If empty, returns all templates.
+            templateids: List of template IDs to get. Omit to return all templates; an empty list matches none.
                          Find template IDs with a search or from host associations.
+            groupids: Return only templates in these template groups. An empty list matches none.
+            hostids: Return only templates linked to these hosts. An empty list matches none.
             search: Substring search in template name. Matches partial names like 'Linux' finds 'Linux Server Template'.
             template_name_contains: Shortcut to search for templates by name (adds to 'search').
             limit: Maximum number of results to return (default 100). Set higher for more results.
@@ -147,11 +149,11 @@ def register_templates_tools(mcp, config: ZabbixConfig):
             sort: dict[str, Any] = {"sortfield": sortfield, "sortorder": sortorder}
             filters: dict[str, Any] = {}
             shape: dict[str, Any] = {"output": output}
-            if templateids:
+            if templateids is not None:
                 filters["templateids"] = templateids
-            if groupids:
+            if groupids is not None:
                 filters["groupids"] = groupids
-            if hostids:
+            if hostids is not None:
                 filters["hostids"] = hostids
             _search = dict(search) if search is not None else {}
             if template_name_contains is not None:

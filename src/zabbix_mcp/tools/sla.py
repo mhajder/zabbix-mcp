@@ -75,8 +75,8 @@ def register_sla_tools(mcp, config: ZabbixConfig):
         They track compliance with service objectives and generate reports on availability.
 
         Args:
-            slaids: List of SLA IDs to get. If empty, returns all SLAs.
-            serviceids: List of service IDs to get SLAs for.
+            slaids: List of SLA IDs to get. Omit to return all SLAs; an empty list matches none.
+            serviceids: List of service IDs to get SLAs for. An empty list matches none.
             search: Dictionary with search criteria like {'name': 'Website'}.
             filter_params: Additional filter parameters for advanced filtering.
             limit: Maximum number of results to return (default 100). Set higher for more results.
@@ -101,9 +101,9 @@ def register_sla_tools(mcp, config: ZabbixConfig):
             sort: dict[str, Any] = {"sortfield": sortfield, "sortorder": sortorder}
             filters: dict[str, Any] = {}
             shape: dict[str, Any] = {"output": output}
-            if slaids:
+            if slaids is not None:
                 filters["slaids"] = slaids
-            if serviceids:
+            if serviceids is not None:
                 filters["serviceids"] = serviceids
             if search:
                 filters["search"] = search
