@@ -138,6 +138,9 @@ def register_macros_tools(mcp, config: ZabbixConfig):
                     id_field="globalmacroid" if globalmacro else "hostmacroid",
                     limit=limit,
                     offset=offset,
+                    # 'macro' is the only sort field and many hosts share a
+                    # name, so Zabbix's order of tied rows is not stable.
+                    break_ties=True,
                 )
                 return {
                     "macros": rows,

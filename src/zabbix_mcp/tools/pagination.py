@@ -16,9 +16,19 @@ Sorting is kept separate from the filters throughout: Zabbix fails with
 "Database error occurred." when ``countOutput`` is combined with ``sortfield``,
 so the count query must never carry one. A deterministic sort is still required
 for pages to line up, so callers pass one in ``sort``.
+
+Where the only sortable field is not unique (``usermacro.get`` sorts by
+``macro`` alone), rows tied on it can come back in a different order on each
+query. ``break_ties`` then puts each group of tied rows in id order - see
+_tie_broken_ids.
 """
 
 from typing import Any
+
+# Largest group of tied rows that is read in full to put it in id order. A
+# bigger one (one macro name on thousands of hosts) keeps Zabbix's own order on
+# that page instead, which can differ between queries.
+MAX_TIE_GROUP = 1000
 
 
 async def fetch_total(api_object: Any, filters: dict[str, Any]) -> int:
@@ -44,6 +54,7 @@ async def fetch_page(
     id_field: str,
     limit: int,
     offset: int,
+    break_ties: bool = False,
 ) -> tuple[list[dict[str, Any]], int]:
     """Fetch one page of a Zabbix ``*.get`` method plus the total match count.
 
@@ -58,6 +69,9 @@ async def fetch_page(
             plural filter name is derived from it (``"hostids"``).
         limit: Page size.
         offset: Number of matching records to skip.
+        break_ties: Order rows tied on the sort field by id, for objects whose
+            only sort field is not unique. Costs up to one extra id query of
+            at most MAX_TIE_GROUP + 1 rows.
 
     Returns:
         tuple: The page of objects, and the total number of matching records.
@@ -66,14 +80,18 @@ async def fetch_page(
     if offset >= total:
         return [], total
 
-    if offset == 0:
+    if break_ties:
+        page_ids = await _tie_broken_ids(
+            api_object, filters, sort, id_field, limit, offset
+        )
+    elif offset == 0:
         rows = await api_object.get(**filters, **sort, **shape, limit=limit)
         return rows, total
-
-    cursor = await api_object.get(
-        **filters, **sort, output=[id_field], limit=offset + limit
-    )
-    page_ids = [row[id_field] for row in cursor[offset:]]
+    else:
+        cursor = await api_object.get(
+            **filters, **sort, output=[id_field], limit=offset + limit
+        )
+        page_ids = [row[id_field] for row in cursor[offset:]]
     if not page_ids:
         return [], total
 
@@ -96,3 +114,70 @@ async def fetch_page(
         for row in rows:
             row.pop(id_field, None)
     return rows, total
+
+
+async def _tie_broken_ids(
+    api_object: Any,
+    filters: dict[str, Any],
+    sort: dict[str, Any],
+    id_field: str,
+    limit: int,
+    offset: int,
+) -> list[str]:
+    """Return the ids of one page in Zabbix's order, with ties broken by id.
+
+    Rows tied on the sort field come back in any order but always next to each
+    other, so every group of equal values in the first ``offset + limit`` rows
+    holds all of that value's rows - except the last group, which may continue
+    past the cut. Groups are put in id order here, and the last one is read in
+    full first with one query for its value - unless it has more than
+    MAX_TIE_GROUP rows, in which case it keeps Zabbix's order.
+
+    Args:
+        api_object: Zabbix API object to query, e.g. ``api.usermacro``.
+        filters: Params that select which records match.
+        sort: ``sortfield`` (a single field name) and ``sortorder``.
+        id_field: Singular id property of the object.
+        limit: Page size.
+        offset: Number of matching records to skip.
+
+    Returns:
+        list: Ids of the requested page, in page order.
+    """
+    field = sort["sortfield"]
+    descending = str(sort.get("sortorder", "ASC")).upper() == "DESC"
+    cursor = await api_object.get(
+        **filters, **sort, output=[id_field, field], limit=offset + limit
+    )
+
+    groups: list[list[dict[str, Any]]] = []
+    for row in cursor:
+        if groups and groups[-1][0].get(field) == row.get(field):
+            groups[-1].append(row)
+        else:
+            groups.append([row])
+
+    keep_last_order = False
+    if groups and len(cursor) == offset + limit:
+        # The cut may fall inside the last group; read all of it, unless it is
+        # too big to be worth reading on every page.
+        value = groups[-1][0].get(field)
+        tie_filter = {**filters.get("filter", {}), field: value}
+        tied = await api_object.get(
+            **{**filters, "filter": tie_filter},
+            output=[id_field, field],
+            limit=MAX_TIE_GROUP + 1,
+        )
+        if len(tied) <= MAX_TIE_GROUP:
+            groups[-1] = tied
+        else:
+            keep_last_order = True
+
+    ordered: list[str] = []
+    for index, group in enumerate(groups):
+        if not (keep_last_order and index == len(groups) - 1):
+            group = sorted(
+                group, key=lambda row: int(row[id_field]), reverse=descending
+            )
+        ordered.extend(row[id_field] for row in group)
+    return ordered[offset : offset + limit]
