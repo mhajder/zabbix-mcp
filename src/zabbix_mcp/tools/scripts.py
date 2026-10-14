@@ -141,7 +141,7 @@ def register_scripts_tools(mcp, config: ZabbixConfig):
         tags={"zabbix", "script"},
         annotations={
             "readOnlyHint": False,
-            "destructiveHint": False,
+            "destructiveHint": True,
             "idempotentHint": False,
         },
     )

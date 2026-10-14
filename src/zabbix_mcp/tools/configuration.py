@@ -181,7 +181,7 @@ def register_configuration_tools(mcp, config: ZabbixConfig):
         tags={"zabbix", "configuration"},
         annotations={
             "readOnlyHint": False,
-            "destructiveHint": False,
+            "destructiveHint": True,
             "idempotentHint": False,
         },
     )
