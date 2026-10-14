@@ -84,6 +84,8 @@ def test_whitespace_only_credentials_count_as_missing(monkeypatch):
 
 
 def test_password_keeps_its_spaces(monkeypatch):
+    monkeypatch.delenv("ZABBIX_TOKEN")
+    monkeypatch.setenv("ZABBIX_USER", "admin")
     monkeypatch.setenv("ZABBIX_PASSWORD", " pass word ")
     assert get_zabbix_config_from_env().password == " pass word "  # noqa: S105
 
@@ -175,3 +177,11 @@ def test_port_is_checked_for_http_transports(monkeypatch, transport):
     monkeypatch.setenv("MCP_HTTP_PORT", "not-a-port")
     with pytest.raises(ValueError, match="MCP_HTTP_PORT must be an integer"):
         get_transport_config_from_env()
+
+
+@pytest.mark.parametrize("name", ["ZABBIX_USER", "ZABBIX_PASSWORD"])
+def test_token_with_user_or_password_stops_startup(monkeypatch, name):
+    """zabbix_utils rejects the mix at login, failing every call otherwise."""
+    monkeypatch.setenv(name, "x")
+    with pytest.raises(ValueError, match="Provide only one authentication method"):
+        get_zabbix_config_from_env()

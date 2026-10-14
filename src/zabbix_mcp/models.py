@@ -74,6 +74,22 @@ class ZabbixConfig(BaseModel):
             raise ValueError(f"must be at least 1: {', '.join(bad)}")
         return self
 
+    @model_validator(mode="after")
+    def _check_single_auth_method(self) -> "ZabbixConfig":
+        """Refuse a token alongside a username or password.
+
+        zabbix_utils rejects that combination at login, so the server would
+        start and then fail every tool call. Checked here rather than in main()
+        so that `fastmcp run`, which never calls main(), stops on it too.
+        """
+        if self.token and (self.user or self.password):
+            raise ValueError(
+                "Both ZABBIX_TOKEN and ZABBIX_USER/ZABBIX_PASSWORD are set. Provide "
+                "only one authentication method - the Zabbix client rejects a token "
+                "combined with a username or password."
+            )
+        return self
+
 
 class TransportConfig(BaseModel):
     """Configuration for MCP transport layer"""
