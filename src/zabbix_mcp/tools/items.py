@@ -134,8 +134,8 @@ def register_items_tools(mcp, config: ZabbixConfig):
                   - itemid: Unique item ID
                   - name: Item name (e.g., 'CPU load average')
                   - key_: Item key (e.g., 'system.cpu.load')
-                  - type: Collection method (0=Zabbix agent, 2=SNMP, 3=IPMI, etc.)
-                  - value_type: Data type (0=numeric float, 1=character, 3=numeric unsigned, 4=log)
+                  - type: Collection method (0=Zabbix agent, 2=trapper, 7=Zabbix agent (active), 20=SNMP agent, etc.)
+                  - value_type: Data type (0=numeric float, 1=character, 2=log, 3=numeric unsigned, 4=text)
                   - status: 0=enabled, 1=disabled
                   - delay: Collection interval, e.g. '1m' (0 for trapper and dependent items)
 
@@ -213,7 +213,10 @@ def register_items_tools(mcp, config: ZabbixConfig):
             int, Field(description="Item type (0=Zabbix agent, 2=trapper, etc.).")
         ],
         value_type: Annotated[
-            int, Field(description="Value type (0=float, 1=char, 3=unsigned, 4=text).")
+            int,
+            Field(
+                description="Value type (0=float, 1=char, 2=log, 3=unsigned, 4=text)."
+            ),
         ],
         delay: Annotated[
             str,
@@ -245,19 +248,28 @@ def register_items_tools(mcp, config: ZabbixConfig):
             hostid: ID of the host this item belongs to. Get from host_get.
             type_: Collection method:
                    - 0 = Zabbix agent (most common)
-                   - 2 = Zabbix trapper (passive agent)
-                   - 3 = SNMP
+                   - 2 = Zabbix trapper (values pushed with zabbix_sender)
+                   - 3 = Simple check
                    - 5 = Zabbix internal
-                   - 7 = SNMP trap
+                   - 7 = Zabbix agent (active)
                    - 10 = External check
                    - 11 = Database monitor
-                   - 12 = IPMI
+                   - 12 = IPMI agent
                    - 13 = SSH agent
+                   - 14 = TELNET agent
+                   - 15 = Calculated
+                   - 16 = JMX agent
+                   - 17 = SNMP trap
+                   - 18 = Dependent item
+                   - 19 = HTTP agent
+                   - 20 = SNMP agent
+                   - 21 = Script
             value_type: Data type of collected values:
                         - 0 = Numeric (float)
                         - 1 = Character string
+                        - 2 = Log
                         - 3 = Numeric (unsigned)
-                        - 4 = Log data
+                        - 4 = Text
             delay: Collection interval. Default '1m'. Use time suffixes like '30s', '5m', '1h'.
                    Must be '0' for trapper (type 2) and dependent (type 18) items, which are
                    pushed rather than polled - Zabbix rejects any other value for them.
