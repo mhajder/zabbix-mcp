@@ -22,6 +22,8 @@ FROM python:3.15-alpine3.24
 LABEL org.opencontainers.image.title="Zabbix MCP Server" \
       org.opencontainers.image.description="MCP server for Zabbix management" \
       org.opencontainers.image.url="https://github.com/mhajder/zabbix-mcp" \
+      org.opencontainers.image.documentation="https://github.com/mhajder/zabbix-mcp#readme" \
+      org.opencontainers.image.authors="Mateusz Hajder" \
       org.opencontainers.image.source="https://github.com/mhajder/zabbix-mcp" \
       org.opencontainers.image.vendor="Mateusz Hajder" \
       org.opencontainers.image.licenses="MIT" \
