@@ -1,10 +1,26 @@
+<div align="center">
+
 # Zabbix MCP Server
+
+**Let AI agents query and manage Zabbix monitoring through the Model Context Protocol**
+
+[![PyPI](https://img.shields.io/pypi/v/zabbix-mcp?logo=pypi&logoColor=white)](https://pypi.org/project/zabbix-mcp/)
+[![Python](https://img.shields.io/pypi/pyversions/zabbix-mcp?logo=python&logoColor=white)](https://pypi.org/project/zabbix-mcp/)
+[![License](https://img.shields.io/github/license/mhajder/zabbix-mcp)](https://github.com/mhajder/zabbix-mcp/blob/main/LICENSE)
+
+[![Pre-commit Checks](https://github.com/mhajder/zabbix-mcp/actions/workflows/pre-commit.yml/badge.svg)](https://github.com/mhajder/zabbix-mcp/actions/workflows/pre-commit.yml)
+[![Docker](https://img.shields.io/badge/ghcr.io-zabbix--mcp-2496ED?logo=docker&logoColor=white)](https://github.com/mhajder/zabbix-mcp/pkgs/container/zabbix-mcp)
+[![MCP Registry](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fregistry.modelcontextprotocol.io%2Fv0.1%2Fservers%2Fio.github.mhajder%252Fzabbix-mcp%2Fversions%2Flatest&query=%24.server.version&label=MCP%20Registry&color=6E56CF)](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.mhajder%2Fzabbix-mcp/versions/latest)
+
+[Installation](https://github.com/mhajder/zabbix-mcp#-installation) · [Tools](https://github.com/mhajder/zabbix-mcp#-available-tools) · [Configuration](https://github.com/mhajder/zabbix-mcp#-configuration) · [Security](https://github.com/mhajder/zabbix-mcp#-security--safety-features)
+
+</div>
 
 <!-- mcp-name: io.github.mhajder/zabbix-mcp -->
 
 Zabbix MCP Server is a Python-based Model Context Protocol (MCP) server designed to provide advanced, programmable access to Zabbix monitoring data and management features. It exposes a modern API for querying, automating, and integrating Zabbix resources such as hosts, templates, triggers, items, problems, events, users, proxies, maintenance periods, and more. The server supports both read and write operations, robust security features, and is suitable for integration with AI assistants, automation tools, dashboards, and custom monitoring workflows.
 
-## Features
+## ✨ Features
 
 ### Core Features
 
@@ -37,7 +53,7 @@ Zabbix MCP Server is a Python-based Model Context Protocol (MCP) server designed
 - Multiple transport options (STDIO, SSE, HTTP)
 - Optional Sentry integration for error tracking
 
-## Installation
+## 🚀 Installation
 
 ### Prerequisites
 
@@ -147,7 +163,7 @@ uv run ty check .
 uv run prek install
 ```
 
-## Configuration
+## 🔧 Configuration
 
 ### Environment Variables
 
@@ -220,7 +236,7 @@ MCP_TRANSPORT=stdio
 # MCP_HTTP_BEARER_TOKEN=
 ```
 
-## Available Tools
+## 🧰 Available Tools
 
 ### API Information
 
@@ -326,7 +342,7 @@ MCP_TRANSPORT=stdio
 - `configuration_export`: Export Zabbix configurations to JSON or XML
 - `configuration_import`: Import Zabbix configurations from JSON or XML
 
-## Security & Safety Features
+## 🔒 Security & Safety Features
 
 ### Read-Only Mode
 
@@ -520,16 +536,12 @@ curl http://localhost:8000/health
 
 For more information on FastMCP transports, see the [FastMCP documentation](https://gofastmcp.com/deployment/running-server#transport-protocols).
 
-## Contributing
+## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Run tests and ensure code quality (`uv run pytest && uv run ruff check .`)
-5. Commit your changes (`git commit -m 'Add amazing feature'`)
-6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
+Contributions are welcome. See [CONTRIBUTING.md](https://github.com/mhajder/zabbix-mcp/blob/main/CONTRIBUTING.md) for the dev setup, checks and commit message format, and use the [issue templates](https://github.com/mhajder/zabbix-mcp/issues/new/choose) for bugs and feature requests.
 
-## License
+Found a security problem? Please report it privately as described in [SECURITY.md](https://github.com/mhajder/zabbix-mcp/blob/main/SECURITY.md).
 
-MIT License - see LICENSE file for details.
+## 📜 License
+
+MIT License - see [LICENSE](https://github.com/mhajder/zabbix-mcp/blob/main/LICENSE) for details.
