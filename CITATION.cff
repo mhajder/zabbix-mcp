@@ -1,0 +1,21 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "Zabbix MCP Server"
+abstract: "MCP server for Zabbix 6.0-7.4 (monitoring): hosts, host groups, templates, items, triggers, problems and events, history and trends, maintenance, users, proxies, SLAs, script execution and configuration import/export. Read-only mode, tag-based tool filtering and rate limiting."
+authors:
+  - given-names: Mateusz
+    family-names: Hajder
+repository-code: "https://github.com/mhajder/zabbix-mcp"
+url: "https://pypi.org/project/zabbix-mcp/"
+license: MIT
+version: 0.7.0
+keywords:
+  - mcp
+  - mcp-server
+  - model-context-protocol
+  - fastmcp
+  - ai-agents
+  - zabbix
+  - monitoring
+  - observability
