@@ -9,7 +9,7 @@ authors:
 repository-code: "https://github.com/mhajder/zabbix-mcp"
 url: "https://pypi.org/project/zabbix-mcp/"
 license: MIT
-version: 0.7.0
+version: 0.7.1
 keywords:
   - mcp
   - mcp-server
