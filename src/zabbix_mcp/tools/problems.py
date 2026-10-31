@@ -17,6 +17,33 @@ from zabbix_mcp.zabbix_client import ZabbixClient
 # event.acknowledge bit that makes Zabbix record the message text.
 _ADD_MESSAGE = 4
 
+# Host fields attached to each problem by problem_get(select_hosts=True).
+_PROBLEM_HOST_FIELDS = ["hostid", "host", "name"]
+
+
+async def attach_problem_hosts(api: Any, problems: list[dict[str, Any]]) -> None:
+    """Add a 'hosts' list to each problem, in place.
+
+    problem.get has no selectHosts, unlike event.get. Problems returned by
+    problem_get always come from triggers (source 0, object 0), so 'objectid'
+    is a trigger id and one trigger.get resolves the hosts for the whole page.
+
+    Args:
+        api: Open Zabbix API client.
+        problems: Problem objects, each carrying 'objectid'.
+    """
+    triggerids = sorted({p["objectid"] for p in problems if p.get("objectid")})
+    hosts_by_trigger: dict[str, list[dict[str, Any]]] = {}
+    if triggerids:
+        triggers = await api.trigger.get(
+            triggerids=triggerids,
+            output=["triggerid"],
+            selectHosts=_PROBLEM_HOST_FIELDS,
+        )
+        hosts_by_trigger = {t["triggerid"]: t.get("hosts", []) for t in triggers}
+    for problem in problems:
+        problem["hosts"] = hosts_by_trigger.get(problem.get("objectid", ""), [])
+
 
 def register_problems_tools(mcp, config: ZabbixConfig):
     """Register Zabbix problems tools with the MCP server"""
@@ -96,6 +123,13 @@ def register_problems_tools(mcp, config: ZabbixConfig):
             str,
             Field(default="ASC", description="Sort direction - 'ASC' or 'DESC'."),
         ] = "ASC",
+        select_hosts: Annotated[
+            bool,
+            Field(
+                default=False,
+                description="If true, each problem includes a 'hosts' list (hostid, host, name) of the hosts it occurred on.",
+            ),
+        ] = False,
         count_output: Annotated[
             bool,
             Field(
@@ -126,6 +160,8 @@ def register_problems_tools(mcp, config: ZabbixConfig):
             offset: Number of matching records to skip, for paging.
             acknowledged: False = unacknowledged only, True = acknowledged only, None = all.
             suppressed: False = unsuppressed only, True = suppressed only, None = all.
+            select_hosts: If true, each problem includes a 'hosts' list with hostid, host
+                         and visible name. Eliminates the need for separate trigger/host lookups.
 
         Returns:
             dict: Contains 'problems' list with problem objects, 'count' of results returned,
@@ -172,6 +208,13 @@ def register_problems_tools(mcp, config: ZabbixConfig):
                 filters["acknowledged"] = acknowledged
             if suppressed is not None:
                 filters["suppressed"] = suppressed
+            # Hosts are resolved through the trigger id, so it must be fetched
+            # even when the caller's 'output' leaves it out.
+            strip_objectid = (
+                select_hosts and isinstance(output, list) and "objectid" not in output
+            )
+            if strip_objectid:
+                shape["output"] = [*output, "objectid"]
 
             async with ZabbixClient(config) as api:
                 if count_output:
@@ -186,6 +229,11 @@ def register_problems_tools(mcp, config: ZabbixConfig):
                     limit=limit,
                     offset=offset,
                 )
+                if select_hosts:
+                    await attach_problem_hosts(api, rows)
+                    if strip_objectid:
+                        for row in rows:
+                            row.pop("objectid", None)
                 return {
                     "problems": rows,
                     "count": len(rows),
