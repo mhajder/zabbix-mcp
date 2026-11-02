@@ -292,7 +292,7 @@ MCP_TRANSPORT=stdio
 
 - `user_get`: List users with optional filtering
 - `user_create`: Create a new user
-- `user_update`: Update user properties (name, surname, password, type)
+- `user_update`: Update user properties (username, name, surname, password, role)
 - `user_delete`: Delete users
 
 ### Proxy Management
@@ -357,7 +357,7 @@ READ_ONLY_MODE=true
 You can disable specific categories of tools by setting disabled tags:
 
 ```env
-DISABLED_TAGS=alert,bills
+DISABLED_TAGS=user,script
 ```
 
 ### Tool Search for Large Toolsets
@@ -434,7 +434,7 @@ SENTRY_RELEASE=1.2.3
 SENTRY_PROFILE_SESSION_SAMPLE_RATE=1.0
 
 # Optional: Profiling - lifecycle mode for profiling (default: "trace")
-# Options: "all", "continuation", "trace"
+# Options: "manual", "trace"
 SENTRY_PROFILE_LIFECYCLE=trace
 
 # Optional: Enable log capture as breadcrumbs and events (default: true)
