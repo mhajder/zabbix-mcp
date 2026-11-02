@@ -41,8 +41,8 @@ settings.show_server_banner = False
 settings.check_for_updates = "off"
 
 # Configure logging. An unknown or lowercase LOG_LEVEL must not take the server
-# down, so resolve it leniently and fall back to INFO.
-_requested_log_level = os.getenv("LOG_LEVEL", "INFO").strip().upper()
+# down, so resolve it leniently and fall back to INFO. Blank counts as unset.
+_requested_log_level = (os.getenv("LOG_LEVEL") or "").strip().upper() or "INFO"
 _resolved_log_level = logging.getLevelNamesMapping().get(_requested_log_level)
 logging.basicConfig(
     level=_resolved_log_level if _resolved_log_level is not None else logging.INFO,
