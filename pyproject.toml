@@ -150,3 +150,7 @@ version_provider = "uv"
 version_files = ["server.json", "CITATION.cff:^version"]
 update_changelog_on_bump = true
 major_version_zero = true
+
+[tool.coverage.report]
+# Entry-point guards only call main(), which the tests run directly.
+exclude_also = ['if __name__ == "__main__":']

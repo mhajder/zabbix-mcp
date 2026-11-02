@@ -185,3 +185,17 @@ def test_token_with_user_or_password_stops_startup(monkeypatch, name):
     monkeypatch.setenv(name, "x")
     with pytest.raises(ValueError, match="Provide only one authentication method"):
         get_zabbix_config_from_env()
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ("", set()),
+        ("  ", set()),
+        ("host", {"host"}),
+        (" host , user,,maintenance ", {"host", "user", "maintenance"}),
+    ],
+)
+def test_disabled_tags_are_split_and_trimmed(monkeypatch, raw, expected):
+    monkeypatch.setenv("DISABLED_TAGS", raw)
+    assert get_zabbix_config_from_env().disabled_tags == expected
