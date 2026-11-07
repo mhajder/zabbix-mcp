@@ -1,5 +1,43 @@
 # Changelog
 
+## [0.8.0](https://github.com/mhajder/zabbix-mcp/compare/v0.7.1...v0.8.0) (2026-11-07)
+
+
+### 🚀 Features
+
+* **problems:** add select_hosts to problem_get ([c87d833](https://github.com/mhajder/zabbix-mcp/commit/c87d8332c15f940b810d1e2bfbabebe914126fc8))
+
+
+### 🐛 Bug Fixes
+
+* **server:** treat a blank LOG_LEVEL as unset ([20ec024](https://github.com/mhajder/zabbix-mcp/commit/20ec02497a0b6f61d81ebfb551effcf065b33ded))
+
+
+### 📚 Documentation
+
+* match the README to the code ([ae5ae25](https://github.com/mhajder/zabbix-mcp/commit/ae5ae25d74edb0ca2d1a6c393dc90f333c245c01))
+
+
+### 🧩 CI
+
+* pin actions to commit SHAs at latest versions ([146e3b5](https://github.com/mhajder/zabbix-mcp/commit/146e3b582ed37f2f8f394856c617dcfc8f6f65ea))
+* release with release-please ([0859da3](https://github.com/mhajder/zabbix-mcp/commit/0859da314f45a572e2105ab9af5c21b5a8bf3d62))
+* replace softprops/action-gh-release with the gh CLI ([620e1e8](https://github.com/mhajder/zabbix-mcp/commit/620e1e8e7c90e3c05860b173971063f00d4caf25))
+
+
+### 📦 Build
+
+* **deps:** bump ty to 0.0.98 and type check for all platforms ([7181924](https://github.com/mhajder/zabbix-mcp/commit/7181924a2df61becf3c352d7c930fb2889e8d18c))
+* **deps:** raise minimum versions of dev tools and vulnerable dependencies ([07afc2a](https://github.com/mhajder/zabbix-mcp/commit/07afc2a04cbdcca1b6815fef9ded61c54b440e88))
+* **deps:** stop Dependabot proposing Python pre-release and minor bumps ([09afeb1](https://github.com/mhajder/zabbix-mcp/commit/09afeb1eaf3ba38c644e8ab0cf915d7f90ebbcab))
+* **docker:** pin base images by version and digest and update them with Dependabot ([c2cf619](https://github.com/mhajder/zabbix-mcp/commit/c2cf619e2fd0c6f88bd0d817d601fd0a5c2d2003))
+* install optional extras for ty check in pre-commit hook ([a7ea3b5](https://github.com/mhajder/zabbix-mcp/commit/a7ea3b5a366e63116889c68fcb288c93d238cf18))
+
+
+### 🧪 Tests
+
+* raise line coverage to 99.9% ([5fd4115](https://github.com/mhajder/zabbix-mcp/commit/5fd4115b95cba67296cb172fd7e66d5e00bac62d))
+
 ## v0.7.1 (2026-10-23)
 
 ### Fix
