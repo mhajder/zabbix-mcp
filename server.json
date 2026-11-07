@@ -8,12 +8,12 @@
     "url": "https://github.com/mhajder/zabbix-mcp",
     "source": "github"
   },
-  "version": "0.7.1",
+  "version": "0.8.0",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "zabbix-mcp",
-      "version": "0.7.1",
+      "version": "0.8.0",
       "runtimeHint": "uvx",
       "transport": {
         "type": "stdio"
@@ -131,7 +131,7 @@
     {
       "registryType": "pypi",
       "identifier": "zabbix-mcp",
-      "version": "0.7.1",
+      "version": "0.8.0",
       "runtimeHint": "uvx",
       "transport": {
         "type": "streamable-http",
