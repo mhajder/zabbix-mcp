@@ -209,7 +209,7 @@ async def test_build_session_installs_the_retry_middleware():
     try:
         assert isinstance(session, aiohttp.ClientSession)
         assert session._middlewares == (retry_middleware,)
-        assert session.connector is not None
-        assert session.connector._ssl is False  # ty: ignore[unresolved-attribute]
+        assert isinstance(session.connector, aiohttp.TCPConnector)
+        assert session.connector._ssl is False
     finally:
         await session.close()
