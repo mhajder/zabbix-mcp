@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.1](https://github.com/mhajder/zabbix-mcp/compare/v0.8.0...v0.8.1) (2026-11-14)
+
+
+### 🧪 Tests
+
+* narrow connector type instead of ty ignore comment ([5f02f74](https://github.com/mhajder/zabbix-mcp/commit/5f02f74d1cef9551d6aae9ee7fcc0a55be4cb912))
+
 ## [0.8.0](https://github.com/mhajder/zabbix-mcp/compare/v0.7.1...v0.8.0) (2026-11-07)
 
 
