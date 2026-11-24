@@ -3067,7 +3067,7 @@ requires-dist = [
     { name = "fastmcp", specifier = ">=4.1.2,<5" },
     { name = "pydantic", specifier = ">=2.12.0" },
     { name = "python-dotenv", specifier = ">=1.2.2" },
-    { name = "sentry-sdk", marker = "extra == 'sentry'", specifier = ">=2.43.0" },
+    { name = "sentry-sdk", marker = "extra == 'sentry'", specifier = ">=2.43.0,<3" },
     { name = "zabbix-utils", extras = ["async"], specifier = ">=2.0.4" },
 ]
 provides-extras = ["sentry"]
