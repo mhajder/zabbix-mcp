@@ -6,11 +6,13 @@ the library would send. Nothing leaves the process.
 """
 
 from collections import defaultdict
+from collections.abc import AsyncGenerator
 from collections.abc import Callable
 from typing import Any
 from typing import cast
 
 import pytest
+import pytest_asyncio
 from fastmcp import Client
 from fastmcp import FastMCP
 from zabbix_utils.aioapi import APIObject
@@ -90,8 +92,15 @@ def zabbix(monkeypatch) -> FakeZabbixAPI:
     return fake
 
 
+@pytest_asyncio.fixture(scope="session")
+async def _mcp_client(mcp_server: FastMCP) -> AsyncGenerator[Client]:
+    """Keep one in-memory MCP Client open for tool calls across the session."""
+    async with Client(mcp_server) as client:
+        yield client
+
+
 @pytest.fixture
-def call_tool(mcp_server, zabbix) -> Callable[..., Any]:
+def call_tool(_mcp_client, zabbix) -> Callable[..., Any]:
     """Call a tool over an in-memory MCP session and return its structured result.
 
     Failures raise fastmcp's ToolError, as a client would see them.
@@ -99,8 +108,7 @@ def call_tool(mcp_server, zabbix) -> Callable[..., Any]:
     del zabbix  # requested so the tool never reaches a real ZabbixClient
 
     async def call(name: str, arguments: dict[str, Any] | None = None) -> Any:
-        async with Client(mcp_server) as client:
-            result = await client.call_tool(name, arguments or {})
+        result = await _mcp_client.call_tool(name, arguments or {})
         return result.structured_content
 
     return call

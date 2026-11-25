@@ -56,14 +56,19 @@ def load_server(monkeypatch):
     monkeypatch.setattr(dotenv, "load_dotenv", lambda *_args, **_kwargs: False)
     original = sys.modules.get(MODULE)
 
-    def factory(**env: str):
+    def factory(*, register_tools: bool = True, **env: str):
         env.setdefault("ZABBIX_URL", "https://zabbix.invalid/api_jsonrpc.php")
         if "ZABBIX_USER" not in env and "ZABBIX_PASSWORD" not in env:
             env.setdefault("ZABBIX_TOKEN", "static-token")
         for name, value in env.items():
             monkeypatch.setenv(name, value)
         sys.modules.pop(MODULE, None)
-        module = importlib.import_module(MODULE)
+        if register_tools:
+            module = importlib.import_module(MODULE)
+        else:
+            with monkeypatch.context() as m:
+                m.setattr("zabbix_mcp.tools.register_tools", lambda *_a, **_kw: None)
+                module = importlib.import_module(MODULE)
         monkeypatch.setattr(module.mcp, "run", MagicMock())
         return module
 
@@ -80,7 +85,7 @@ async def tool_names(module) -> set[str]:
 
 @pytest.mark.asyncio
 async def test_health_route_answers_ok(load_server):
-    server = load_server()
+    server = load_server(register_tools=False)
 
     response = await server.health(MagicMock())
 
@@ -147,6 +152,7 @@ async def test_tool_search_replaces_the_tool_list(
 
 def test_rate_limiting_adds_middleware(load_server):
     server = load_server(
+        register_tools=False,
         RATE_LIMIT_ENABLED="true",
         RATE_LIMIT_MAX_REQUESTS="10",
         RATE_LIMIT_WINDOW_MINUTES="2",
@@ -162,7 +168,7 @@ def test_rate_limiting_adds_middleware(load_server):
 
 
 def test_rate_limiting_is_off_by_default(load_server):
-    server = load_server()
+    server = load_server(register_tools=False)
 
     assert not any(
         isinstance(m, SlidingWindowRateLimitingMiddleware)
@@ -171,7 +177,7 @@ def test_rate_limiting_is_off_by_default(load_server):
 
 
 def test_unknown_log_level_falls_back_to_info(load_server, caplog):
-    load_server(LOG_LEVEL="chatty")
+    load_server(register_tools=False, LOG_LEVEL="chatty")
 
     assert "Unknown LOG_LEVEL 'CHATTY'" in caplog.text
 
@@ -179,21 +185,23 @@ def test_unknown_log_level_falls_back_to_info(load_server, caplog):
 @pytest.mark.parametrize("value", ["", "   "])
 def test_blank_log_level_means_info_without_a_warning(load_server, caplog, value):
     """LOG_LEVEL= in a .env or compose file is "unset", not an unknown level."""
-    server = load_server(LOG_LEVEL=value)
+    server = load_server(register_tools=False, LOG_LEVEL=value)
 
     assert "Unknown LOG_LEVEL" not in caplog.text
     assert server._resolved_log_level == logging.INFO
 
 
 def test_lowercase_log_level_is_accepted(load_server, caplog):
-    server = load_server(LOG_LEVEL="debug")
+    server = load_server(register_tools=False, LOG_LEVEL="debug")
 
     assert server._resolved_log_level == logging.DEBUG
     assert "Unknown LOG_LEVEL" not in caplog.text
 
 
 def test_version_comes_from_the_installed_package(load_server):
-    assert load_server().__version__ == importlib.metadata.version("zabbix-mcp")
+    assert load_server(register_tools=False).__version__ == importlib.metadata.version(
+        "zabbix-mcp"
+    )
 
 
 def test_version_falls_back_when_package_is_not_installed(load_server, monkeypatch):
@@ -202,24 +210,31 @@ def test_version_falls_back_when_package_is_not_installed(load_server, monkeypat
 
     monkeypatch.setattr(importlib.metadata, "version", missing)
 
-    assert load_server().__version__ == "0.0.1"
+    assert load_server(register_tools=False).__version__ == "0.0.1"
 
 
 def test_invalid_configuration_is_logged_and_raised(load_server, caplog):
     with pytest.raises(ValueError, match="TOOL_SEARCH_STRATEGY"):
-        load_server(TOOL_SEARCH_ENABLED="true", TOOL_SEARCH_STRATEGY="regx")
+        load_server(
+            register_tools=False,
+            TOOL_SEARCH_ENABLED="true",
+            TOOL_SEARCH_STRATEGY="regx",
+        )
 
     assert "Invalid configuration" in caplog.text
 
 
 def test_bearer_token_enables_auth(load_server):
-    assert load_server().mcp.auth is None
-    assert load_server(MCP_HTTP_BEARER_TOKEN="secret").mcp.auth is not None
+    assert load_server(register_tools=False).mcp.auth is None
+    assert (
+        load_server(register_tools=False, MCP_HTTP_BEARER_TOKEN="secret").mcp.auth
+        is not None
+    )
 
 
 @pytest.mark.asyncio
 async def test_bearer_token_is_the_one_accepted_credential(load_server):
-    auth = load_server(MCP_HTTP_BEARER_TOKEN="secret").mcp.auth
+    auth = load_server(register_tools=False, MCP_HTTP_BEARER_TOKEN="secret").mcp.auth
 
     assert (await auth.verify_token("secret")).client_id == "authenticated-client"
     assert await auth.verify_token("guess") is None
@@ -227,7 +242,7 @@ async def test_bearer_token_is_the_one_accepted_credential(load_server):
 
 @pytest.mark.asyncio
 async def test_lifespan_closes_the_zabbix_connection(load_server, monkeypatch):
-    server = load_server()
+    server = load_server(register_tools=False)
     monkeypatch.setattr(ZabbixClient, "_instance", None)
     closed = []
 
@@ -243,7 +258,7 @@ async def test_lifespan_closes_the_zabbix_connection(load_server, monkeypatch):
 
 def test_main_runs_stdio_by_default(load_server, caplog):
     caplog.set_level(logging.INFO)
-    server = load_server()
+    server = load_server(register_tools=False)
 
     server.main()
 
@@ -258,6 +273,7 @@ def test_main_runs_http_transports_on_the_configured_address(
 ):
     caplog.set_level(logging.INFO)
     server = load_server(
+        register_tools=False,
         MCP_TRANSPORT=transport,
         MCP_HTTP_HOST="192.0.2.10",
         MCP_HTTP_PORT="9001",
@@ -278,7 +294,7 @@ def test_main_runs_http_transports_on_the_configured_address(
 @pytest.mark.parametrize("transport", ["http", "sse"])
 def test_main_warns_when_http_runs_without_a_token(load_server, caplog, transport):
     caplog.set_level(logging.INFO)
-    server = load_server(MCP_TRANSPORT=transport)
+    server = load_server(register_tools=False, MCP_TRANSPORT=transport)
 
     server.main()
 
@@ -289,7 +305,9 @@ def test_main_warns_when_http_runs_without_a_token(load_server, caplog, transpor
 
 def test_main_accepts_user_and_password(load_server, caplog):
     caplog.set_level(logging.INFO)
-    server = load_server(ZABBIX_USER="Admin", ZABBIX_PASSWORD="zabbix")
+    server = load_server(
+        register_tools=False, ZABBIX_USER="Admin", ZABBIX_PASSWORD="zabbix"
+    )
 
     server.main()
 
@@ -298,7 +316,9 @@ def test_main_accepts_user_and_password(load_server, caplog):
 
 
 def test_main_warns_about_plaintext_http(load_server, caplog):
-    server = load_server(ZABBIX_URL="http://zabbix.invalid/api_jsonrpc.php")
+    server = load_server(
+        register_tools=False, ZABBIX_URL="http://zabbix.invalid/api_jsonrpc.php"
+    )
 
     server.main()
 
@@ -322,7 +342,7 @@ def test_main_warns_about_plaintext_http(load_server, caplog):
     ],
 )
 def test_main_stops_on_bad_settings(load_server, caplog, env, message):
-    server = load_server(**env)
+    server = load_server(register_tools=False, **env)
 
     with pytest.raises(SystemExit) as exc:
         server.main()

@@ -66,7 +66,7 @@ def hung_port(monkeypatch) -> Iterator[int]:
     The kernel completes the TCP handshake from the listen backlog, so a plain
     connect would call this healthy.
     """
-    monkeypatch.setattr(healthcheck, "PROBE_TIMEOUT_SECONDS", 0.3)
+    monkeypatch.setattr(healthcheck, "PROBE_TIMEOUT_SECONDS", 0.05)
     with socket.socket() as sock:
         sock.bind(("127.0.0.1", 0))
         sock.listen()
@@ -184,10 +184,19 @@ def _post_mcp(port: int) -> int:
         conn.close()
 
 
-def test_real_server_health_endpoint_needs_no_token(monkeypatch, closed_port, tmp_path):
-    """End to end: the server's /health answers the probe, bearer auth or not."""
-    port = closed_port
-    env = {
+def _free_port() -> int:
+    with socket.socket() as sock:
+        sock.bind(("127.0.0.1", 0))
+        return sock.getsockname()[1]
+
+
+@pytest.fixture(scope="module")
+def real_servers(
+    tmp_path_factory,
+) -> Iterator[tuple[subprocess.Popen[bytes], int, subprocess.Popen[str]]]:
+    """Start the HTTP server and the bad-transport subprocess at once."""
+    port = _free_port()
+    server_env = {
         **os.environ,
         # Unreachable on purpose: /health must not depend on Zabbix.
         "ZABBIX_URL": "https://zabbix.invalid",
@@ -198,48 +207,67 @@ def test_real_server_health_endpoint_needs_no_token(monkeypatch, closed_port, tm
         "MCP_HTTP_BEARER_TOKEN": "secret",
         "SENTRY_DSN": "",
     }
-    server = subprocess.Popen(
-        [sys.executable, "-c", "import zabbix_mcp.server as s; s.main()"],
-        env=env,
-        cwd=tmp_path,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
-    try:
-        _configure(monkeypatch, port)
-        deadline = time.monotonic() + 30
-        while healthcheck.main() != 0:
-            assert server.poll() is None, "server exited"
-            assert time.monotonic() < deadline, "server never became healthy"
-            time.sleep(0.05)
-        # The MCP endpoint itself is protected, so auth is really enabled.
-        assert _post_mcp(port) == 401
-    finally:
-        server.terminate()
-        server.wait(timeout=10)
-
-
-def test_unknown_transport_stops_the_server(tmp_path):
-    """A typo must stop the server, not run stdio behind a closed port.
-
-    The healthcheck skips non-HTTP transports, so a silent stdio fallback would
-    also keep the container reported healthy.
-    """
-    env = {
+    unknown_env = {
         **os.environ,
         "ZABBIX_URL": "https://zabbix.invalid",
         "ZABBIX_TOKEN": "t",
         "MCP_TRANSPORT": "websocket",
         "SENTRY_DSN": "",
     }
-    proc = subprocess.run(
-        [sys.executable, "-c", "import zabbix_mcp.server as s; s.main()"],
-        env=env,
-        cwd=tmp_path,
-        capture_output=True,
-        text=True,
-        timeout=60,
-        check=False,
-    )
+    server: subprocess.Popen[bytes] | None = None
+    unknown_proc: subprocess.Popen[str] | None = None
+    try:
+        server = subprocess.Popen(
+            [sys.executable, "-c", "import zabbix_mcp.server as s; s.main()"],
+            env=server_env,
+            cwd=tmp_path_factory.mktemp("server"),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        unknown_proc = subprocess.Popen(
+            [sys.executable, "-c", "import zabbix_mcp.server as s; s.main()"],
+            env=unknown_env,
+            cwd=tmp_path_factory.mktemp("unknown"),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        yield server, port, unknown_proc
+    finally:
+        if server is not None:
+            server.kill()
+        if unknown_proc is not None and unknown_proc.poll() is None:
+            unknown_proc.kill()
+        if server is not None:
+            server.wait(timeout=10)
+        if unknown_proc is not None:
+            unknown_proc.wait(timeout=10)
+            if unknown_proc.stdout is not None:
+                unknown_proc.stdout.close()
+            if unknown_proc.stderr is not None:
+                unknown_proc.stderr.close()
+
+
+def test_real_server_health_endpoint_needs_no_token(monkeypatch, real_servers):
+    """End to end: the server's /health answers the probe, bearer auth or not."""
+    server, port, _ = real_servers
+    _configure(monkeypatch, port)
+    deadline = time.monotonic() + 30
+    while healthcheck.main() != 0:
+        assert server.poll() is None, "server exited"
+        assert time.monotonic() < deadline, "server never became healthy"
+        time.sleep(0.05)
+    # The MCP endpoint itself is protected, so auth is really enabled.
+    assert _post_mcp(port) == 401
+
+
+def test_unknown_transport_stops_the_server(real_servers):
+    """A typo must stop the server, not run stdio behind a closed port.
+
+    The healthcheck skips non-HTTP transports, so a silent stdio fallback would
+    also keep the container reported healthy.
+    """
+    _, _, proc = real_servers
+    _, stderr = proc.communicate(timeout=60)
     assert proc.returncode == 1
-    assert "Unknown MCP_TRANSPORT 'websocket'" in proc.stderr
+    assert "Unknown MCP_TRANSPORT 'websocket'" in stderr
