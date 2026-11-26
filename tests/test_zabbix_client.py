@@ -199,8 +199,8 @@ async def test_failed_login_closes_the_session(zabbix, make_config, monkeypatch)
     sessions = []
     real_build = zabbix_client.build_session
 
-    def tracking_build(verify_ssl):
-        session = real_build(verify_ssl)
+    def tracking_build(verify_ssl, **kwargs):
+        session = real_build(verify_ssl, **kwargs)
         sessions.append(session)
         return session
 

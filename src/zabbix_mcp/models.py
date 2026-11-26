@@ -25,6 +25,10 @@ class ZabbixConfig(BaseModel):
     # Connection settings
     verify_ssl: bool = Field(True, description="Verify SSL certificates (true/false)")
     timeout: int = Field(30, gt=0, description="Request timeout in seconds")
+    user_agent: str | None = Field(
+        None,
+        description="User-Agent header sent upstream (unset = zabbix-mcp/<version>)",
+    )
     skip_version_check: bool = Field(
         False, description="Skip Zabbix API version compatibility check"
     )

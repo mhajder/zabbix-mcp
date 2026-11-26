@@ -142,7 +142,9 @@ async def retry_middleware(
     raise RuntimeError("unreachable: retry loop always returns")
 
 
-def build_session(verify_ssl: bool) -> aiohttp.ClientSession:
+def build_session(
+    verify_ssl: bool, user_agent: str | None = None
+) -> aiohttp.ClientSession:
     """Create the HTTP session used for one Zabbix API connection.
 
     Passing our own session to ``AsyncZabbixAPI`` is what allows retries to be
@@ -151,11 +153,29 @@ def build_session(verify_ssl: bool) -> aiohttp.ClientSession:
 
     Args:
         verify_ssl: Whether to validate the server's TLS certificate.
+        user_agent: Optional User-Agent header for all requests on this session.
 
     Returns:
         aiohttp.ClientSession: Session with the retry middleware installed.
     """
+    headers = {"User-Agent": user_agent} if user_agent else None
+    if user_agent:
+
+        async def _user_agent_middleware(
+            request: ClientRequest, handler: ClientHandlerType
+        ) -> ClientResponse:
+            # zabbix_utils passes its own User-Agent per call, overriding
+            # ClientSession defaults, so enforce the configured value here.
+            request.headers["User-Agent"] = user_agent
+            return await handler(request)
+
+        return aiohttp.ClientSession(
+            connector=aiohttp.TCPConnector(ssl=verify_ssl),
+            headers=headers,
+            middlewares=(_user_agent_middleware, retry_middleware),
+        )
     return aiohttp.ClientSession(
         connector=aiohttp.TCPConnector(ssl=verify_ssl),
+        headers=headers,
         middlewares=(retry_middleware,),
     )

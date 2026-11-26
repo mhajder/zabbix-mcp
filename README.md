@@ -469,6 +469,7 @@ The server supports SSL certificate verification and custom timeout settings:
 ```env
 ZABBIX_VERIFY_SSL=true    # Enable SSL certificate verification
 ZABBIX_TIMEOUT=30         # Connection timeout in seconds
+# ZABBIX_USER_AGENT=      # Optional User-Agent header (default: zabbix-mcp/<version>)
 ```
 
 ### Transport Configuration

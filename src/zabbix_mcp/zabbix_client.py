@@ -2,6 +2,8 @@ import asyncio
 import logging
 import os
 import time
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version
 from typing import Any
 
 import aiohttp
@@ -22,6 +24,13 @@ from zabbix_mcp.utils import http_port_from_env
 from zabbix_mcp.utils import transport_from_env
 
 logger = logging.getLogger(__name__)
+
+try:
+    APP_VERSION = version("zabbix-mcp")
+except PackageNotFoundError:
+    APP_VERSION = "0.0.1"
+
+DEFAULT_USER_AGENT = f"zabbix-mcp/{APP_VERSION}"
 
 # Name-mangled cache slot for AsyncZabbixAPI.__version. Populating it keeps the
 # library's constructor from resolving the version itself - see _seed_api_version.
@@ -191,6 +200,9 @@ class ZabbixClient:
         finally:
             await session.close()
 
+    def _user_agent(self) -> str:
+        return (self.config.user_agent or "").strip() or DEFAULT_USER_AGENT
+
     async def _seed_api_version(self) -> None:
         """Resolve the Zabbix API version once, without blocking the event loop.
 
@@ -214,6 +226,7 @@ class ZabbixClient:
         connector = aiohttp.TCPConnector(ssl=self.config.verify_ssl)
         async with aiohttp.ClientSession(
             connector=connector,
+            headers={"User-Agent": self._user_agent()},
             timeout=aiohttp.ClientTimeout(total=self.config.timeout),
         ) as session:
             # apiinfo.version is rejected if an Authorization header is present.
@@ -240,7 +253,7 @@ class ZabbixClient:
         _drop_blank_credentials()
         # Supplying the session makes retries possible and hands us its
         # lifecycle: zabbix_utils only closes sessions it created itself.
-        session = build_session(self.config.verify_ssl)
+        session = build_session(self.config.verify_ssl, user_agent=self._user_agent())
         try:
             api = _ReloggingZabbixAPI(
                 url=self.config.zabbix_url,
@@ -326,6 +339,7 @@ def get_zabbix_config_from_env() -> ZabbixConfig:
         password=_password_from_env(),
         verify_ssl=env_bool("ZABBIX_VERIFY_SSL", default=True),
         timeout=_env_setting("ZABBIX_TIMEOUT", "timeout"),
+        user_agent=env_str("ZABBIX_USER_AGENT"),
         skip_version_check=env_bool("ZABBIX_SKIP_VERSION_CHECK", default=False),
         read_only_mode=env_bool("READ_ONLY_MODE", default=False),
         disabled_tags=disabled_tags,
