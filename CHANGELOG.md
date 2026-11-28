@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.9.0](https://github.com/mhajder/zabbix-mcp/compare/v0.8.0...v0.9.0) (2026-11-28)
+
+
+### 🚀 Features
+
+* **client:** make outbound User-Agent configurable ([6e6fbdf](https://github.com/mhajder/zabbix-mcp/commit/6e6fbdf979da9ef645581058e303685be1ed5304))
+
+
+### 🐛 Bug Fixes
+
+* **deps:** support sentry-sdk 3 ([613c18c](https://github.com/mhajder/zabbix-mcp/commit/613c18cd220f6cd5368b27bb27d24f0fa2f7d32e))
+
+
+### 📦 Build
+
+* **deps:** bump the docker group across 1 directory with 2 updates ([#96](https://github.com/mhajder/zabbix-mcp/issues/96)) ([41658a8](https://github.com/mhajder/zabbix-mcp/commit/41658a844edb8fe893bbc8a0c774cc3f4d57f431))
+* **deps:** bump the uv-dependencies group across 1 directory with 2 updates ([#100](https://github.com/mhajder/zabbix-mcp/issues/100)) ([a70a5b2](https://github.com/mhajder/zabbix-mcp/commit/a70a5b2f67cf0426af6fb4a787755018aaf9134f))
+* **docker:** harden runtime image and precompile bytecode ([45c70a0](https://github.com/mhajder/zabbix-mcp/commit/45c70a0363c8640c2ef53fffb104937ea4a61cd4))
+
+
+### 🧪 Tests
+
+* narrow connector type instead of ty ignore comment ([5f02f74](https://github.com/mhajder/zabbix-mcp/commit/5f02f74d1cef9551d6aae9ee7fcc0a55be4cb912))
+* optimize test suite runtime and scope pre-commit stages ([a2cb710](https://github.com/mhajder/zabbix-mcp/commit/a2cb71042d3abd9394800240fc291dc4047efa35))
+
 ## [0.8.0](https://github.com/mhajder/zabbix-mcp/compare/v0.7.1...v0.8.0) (2026-11-07)
 
 
